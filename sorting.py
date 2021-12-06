@@ -40,20 +40,17 @@ def sorting_stage1():
 @app.route("/sorting/stage2", methods=['POST'])
 def sorting_stage2():
     request_data = json.loads(request.data)
-    partition_name = request_data.get('partition_name')
-    if not partition_name:
-        return "'partition_name' attribute not found", 400
-    partition_data = request_data.get('partition_data')
-    if not partition_data:
-        return "'partition_data' attribute not found", 400
+    partitions = request_data.get('partitions')
+    if not partitions:
+        return "'partitions' attribute not found", 400
+
 
     handler = SortingHandlerStage2(
         read_bucket='output-sorting-experiments',
         write_bucket='output-sorting-experiments',
         read_dir='10mb-10files-intermediate',
         write_dir='10mb-10files-output',
-        partition_name=partition_name,
-        partition_data=partition_data
+        partitions=partitions
     )
     Thread(target=handler.execute_stage2).start()
     # handler.execute_stage2()
