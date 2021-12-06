@@ -2,11 +2,14 @@ import io
 import json
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
+from smart_open import open
 
 import numpy as np
 
 
 class SortingHandlerStage1:
+    read_bucket = None
+    write_bucket = None
     read_dir = None
     write_dir = None
 
@@ -34,7 +37,9 @@ class SortingHandlerStage1:
 
     locations = {}
 
-    def __init__(self, read_dir, write_dir, initial_files, **kwargs):
+    def __init__(self, read_bucket, write_bucket, read_dir, write_dir, initial_files, **kwargs):
+        self.read_bucket = read_bucket
+        self.write_bucket = write_bucket
         self.read_dir = read_dir
         self.write_dir = write_dir
         self.initial_files = initial_files
@@ -46,28 +51,28 @@ class SortingHandlerStage1:
         self.current_read += 1
         self.buffers_filled += 1
 
-        with open(f'{self.read_dir}/{file_name}', 'rb') as file:
+        with open(f's3://{self.read_bucket}/{self.read_dir}/{file_name}', 'rb') as file:
             file_content = file.read()
             buf = io.BytesIO()
             buf.write(file_content)
-            self.files_read.update({file_name: {'buffer': buf.getbuffer(), 'status': FileStatus.READ}})
+            self.files_read.update({file_name: {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ}})
             self.read_files += 1
 
         self.current_read -= 1
 
     def determine_categories(self, file_name):
         file_info = self.files_read.get(file_name)
-        if file_info['status'] != FileStatus.READ:
+        if file_info['status'] != FileStatusStage1.READ:
             return
         print(f'Determine categories on file {file_name}')
         self.current_determine_categories += 1
-        file_info['status'] = FileStatus.DETERMINING_CATEGORIES
+        file_info['status'] = FileStatusStage1.DETERMINING_CATEGORIES
 
         np_buffer = np.frombuffer(file_info['buffer'], dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
         record_arr = np.sort(np_buffer, order='key')
         file_info['buffer'] = record_arr
 
-        file_info['status'] = FileStatus.DETERMINED_CATEGORIES
+        file_info['status'] = FileStatusStage1.DETERMINED_CATEGORIES
 
         locations = {file_name: {}}
         num_subcats = 1
@@ -117,17 +122,17 @@ class SortingHandlerStage1:
 
     def write_file(self, file_name):
         file_info = self.files_read.get(file_name)
-        if file_info['status'] != FileStatus.DETERMINED_CATEGORIES:
+        if file_info['status'] != FileStatusStage1.DETERMINED_CATEGORIES:
             return
         print(f'Writing file {file_name}')
         self.current_write += 1
-        file_info['status'] = FileStatus.WRITING
+        file_info['status'] = FileStatusStage1.WRITING
 
-        with open(f'{self.write_dir}/{file_name}', 'wb') as file:
-            file.write(file_info['buffer'])
+        with open(f's3://{self.write_bucket}/{self.write_dir}/{file_name}', 'wb') as file:
+            file.write(memoryview(file_info['buffer']))
 
         file_info['buffer'] = None
-        file_info['status'] = FileStatus.WRITTEN
+        file_info['status'] = FileStatusStage1.WRITTEN
         self.written_files += 1
         self.current_write -= 1
         self.buffers_filled -= 1
@@ -141,26 +146,28 @@ class SortingHandlerStage1:
                         self.current_read < self.max_read and
                         self.buffers_filled < self.max_buffers_filled
                 ):
+                    # self.read_file(file)
                     self.reading_threads.submit(self.read_file, file)
                 elif (
                         file_data and
-                        file_data['status'] == FileStatus.READ and
+                        file_data['status'] == FileStatusStage1.READ and
                         self.current_determine_categories < self.max_determine_categories
                 ):
                     # self.determine_categories(file)
                     self.determine_categories_threads.submit(self.determine_categories, file)
                 elif (
                         file_data and
-                        file_data['status'] == FileStatus.DETERMINED_CATEGORIES and
+                        file_data['status'] == FileStatusStage1.DETERMINED_CATEGORIES and
                         self.current_write < self.max_write
                 ):
+                    # self.write_file(file)
                     self.writing_threads.submit(self.write_file, file)
 
         with open(f'results/locations_{self.initial_files[0]}.json', 'w') as locations_file:
             json.dump(self.locations, locations_file)
 
 
-class FileStatus(Enum):
+class FileStatusStage1(Enum):
     READ = 'READ'
     DETERMINING_CATEGORIES = 'DETERMINING_CATEGORIES'
     DETERMINED_CATEGORIES = 'DETERMINED_CATEGORIES'
