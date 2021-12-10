@@ -44,7 +44,6 @@ def sorting_stage2():
     if not partitions:
         return "'partitions' attribute not found", 400
 
-
     handler = SortingHandlerStage2(
         read_bucket='output-sorting-experiments',
         write_bucket='output-sorting-experiments',

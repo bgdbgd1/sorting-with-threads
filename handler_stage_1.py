@@ -2,6 +2,8 @@ import io
 import json
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
+from threading import Lock
+
 from smart_open import open
 
 import numpy as np
@@ -35,6 +37,10 @@ class SortingHandlerStage1:
     determine_categories_threads = ThreadPoolExecutor(max_workers=1)
     writing_threads = ThreadPoolExecutor(max_workers=1)
 
+    lock_current_read = Lock()
+    lock_current_determine_categories = Lock()
+    lock_current_write = Lock()
+    lock_buffers_filled = Lock()
     locations = {}
 
     def __init__(self, read_bucket, write_bucket, read_dir, write_dir, initial_files, **kwargs):
@@ -48,24 +54,34 @@ class SortingHandlerStage1:
         if self.files_read.get(file_name):
             return
         print(f"Reading file {file_name}")
-        self.current_read += 1
-        self.buffers_filled += 1
+        self.files_read.update({file_name: {'buffer': None, 'status': FileStatusStage1.IN_READ, 'lock': None}})
+
+        with self.lock_current_read:
+            self.current_read += 1
+
+        with self.lock_buffers_filled:
+            self.buffers_filled += 1
 
         with open(f's3://{self.read_bucket}/{self.read_dir}/{file_name}', 'rb') as file:
             file_content = file.read()
             buf = io.BytesIO()
             buf.write(file_content)
-            self.files_read.update({file_name: {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ}})
+            self.files_read[file_name] = {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ, 'lock': Lock()}
+            # self.files_read.update({file_name: {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ, 'lock': Lock()}})
             self.read_files += 1
 
-        self.current_read -= 1
+        with self.lock_current_read:
+            self.current_read -= 1
 
     def determine_categories(self, file_name):
         file_info = self.files_read.get(file_name)
         if file_info['status'] != FileStatusStage1.READ:
             return
         print(f'Determine categories on file {file_name}')
-        self.current_determine_categories += 1
+
+        with self.lock_current_determine_categories:
+            self.current_determine_categories += 1
+
         file_info['status'] = FileStatusStage1.DETERMINING_CATEGORIES
 
         np_buffer = np.frombuffer(file_info['buffer'], dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
@@ -118,14 +134,19 @@ class SortingHandlerStage1:
         }
         self.locations.update(locations)
         self.determined_categories_files += 1
-        self.current_determine_categories -= 1
+
+        with self.lock_current_determine_categories:
+            self.current_determine_categories -= 1
 
     def write_file(self, file_name):
         file_info = self.files_read.get(file_name)
         if file_info['status'] != FileStatusStage1.DETERMINED_CATEGORIES:
             return
         print(f'Writing file {file_name}')
-        self.current_write += 1
+
+        with self.lock_current_write:
+            self.current_write += 1
+
         file_info['status'] = FileStatusStage1.WRITING
 
         with open(f's3://{self.write_bucket}/{self.write_dir}/{file_name}', 'wb') as file:
@@ -134,8 +155,12 @@ class SortingHandlerStage1:
         file_info['buffer'] = None
         file_info['status'] = FileStatusStage1.WRITTEN
         self.written_files += 1
-        self.current_write -= 1
-        self.buffers_filled -= 1
+
+        with self.lock_current_write:
+            self.current_write -= 1
+
+        with self.lock_buffers_filled:
+            self.buffers_filled -= 1
 
     def execute_stage1(self):
         while self.written_files < len(self.initial_files):
@@ -166,8 +191,10 @@ class SortingHandlerStage1:
         with open(f'results/locations_{self.initial_files[0]}.json', 'w') as locations_file:
             json.dump(self.locations, locations_file)
 
+        print("DONE")
 
 class FileStatusStage1(Enum):
+    IN_READ = 'IN_READ'
     READ = 'READ'
     DETERMINING_CATEGORIES = 'DETERMINING_CATEGORIES'
     DETERMINED_CATEGORIES = 'DETERMINED_CATEGORIES'
