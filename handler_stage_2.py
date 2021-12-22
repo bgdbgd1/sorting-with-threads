@@ -1,4 +1,6 @@
 import io
+import json
+import logging
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
 from threading import Lock
@@ -7,43 +9,41 @@ import boto3
 import numpy as np
 from S3File import S3File
 from smart_open import open
+import uuid
+from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    read_bucket = None
-    write_bucket = None
-    read_dir = None
-    write_dir = None
+    def __init__(self, read_bucket, write_bucket, read_dir, write_dir, partitions, experiment_number, config, **kwargs):
+        self.files_in_read = {}
+        self.files_read = {}
 
-    initial_files = []
-    files_in_read = {}
-    files_read = {}
+        self.read_files = 0
+        self.sorted_files = 0
+        self.is_result_written = False
 
-    read_files = 0
-    sorted_files = 0
-    is_result_written = False
+        self.max_read = 2
+        self.max_sort = 1
+        self.max_write = 1
 
-    max_read = 2
-    max_sort = 1
-    max_write = 1
+        self.current_read = 0
+        self.current_sort = 0
+        self.current_write = 0
 
-    current_read = 0
-    current_sort = 0
-    current_write = 0
+        self.buffers_filled = 0
+        self.max_buffers_filled = 1
 
-    buffers_filled = 0
-    max_buffers_filled = 1
+        self.reading_threads = ThreadPoolExecutor(max_workers=2)
+        self.sort_threads = ThreadPoolExecutor(max_workers=1)
+        self.writing_threads = ThreadPoolExecutor(max_workers=1)
 
-    reading_threads = ThreadPoolExecutor(max_workers=2)
-    sort_threads = ThreadPoolExecutor(max_workers=1)
-    writing_threads = ThreadPoolExecutor(max_workers=1)
+        self.lock_current_read = Lock()
+        self.lock_current_sort = Lock()
+        self.lock_current_write = Lock()
+        self.lock_buffers_filled = Lock()
 
-    lock_current_read = Lock()
-    lock_current_sort = Lock()
-    lock_current_write = Lock()
-    lock_buffers_filled = Lock()
+        self.uuid = uuid.uuid4()
 
-    def __init__(self, read_bucket, write_bucket, read_dir, write_dir, partitions, **kwargs):
         self.read_bucket = read_bucket
         self.write_bucket = write_bucket
         self.read_dir = read_dir
@@ -55,6 +55,15 @@ class SortingHandlerStage2:
         self.files_sorted = {}
         self.files_written = []
         self.partitions_names = [partition_name for partition_name, partition_data in partitions.items()]
+        self.experiment_number = experiment_number
+        self.config = config
+        self.logger = get_logger(
+            'stage_2',
+            'stage_2',
+            config['nr_files'],
+            config['file_size'],
+            config['intervals']
+        )
 
     def read_partition(self, partition_name, file_name, start_index, end_index):
         partition_data_in_read = self.files_in_read.get(partition_name)
@@ -76,9 +85,14 @@ class SortingHandlerStage2:
         except Exception as exc:
             print(exc)
         s3 = boto3.resource("s3")
+        process_uuid = uuid.uuid4()
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
+
         s3_object = s3.Object(bucket_name=self.read_bucket, key=f'{self.read_dir}/{file_name}')
         s3file = S3File(s3_object, position=start_index * 100)
         file_content = s3file.read(size=(end_index + 1) * 100 - start_index * 100)
+
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
         if not self.files_read.get(partition_name):
             self.files_read.update(
                 {
@@ -97,20 +111,32 @@ class SortingHandlerStage2:
             self.current_read -= 1
 
     def sort_partition(self, partition_name):
+        if (
+            len(self.files_read[partition_name]) != len(self.partitions[partition_name]) or
+            self.files_sorted.get(partition_name, None) is not None
+        ):
+            print("fast returned")
+            return
         with self.lock_current_sort:
             self.current_sort += 1
         try:
+            self.files_sorted.update({partition_name: 'Nothing'})
             buffer = io.BytesIO()
             file = self.files_read.get(partition_name)
             for file_name, file_data in file.items():
                 buffer.write(file_data['buffer'])
 
             print("SORT")
+
+            process_uuid = uuid.uuid4()
+            self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
             np_array = np.frombuffer(
                 buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
             )
             np_array = np.sort(np_array, order='key')
+            self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
             self.files_sorted.update({partition_name: np_array})
+
             print("FINISHED SORTING")
         except:
             with self.lock_current_sort:
@@ -126,8 +152,12 @@ class SortingHandlerStage2:
         print("Write")
         with self.lock_current_write:
             self.current_write += 1
+        process_uuid = uuid.uuid4()
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
         with open(f's3://{self.write_bucket}/{self.write_dir}/{partition_name}', 'wb') as file:
             file.write(memoryview(self.files_sorted[partition_name]))
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
+
         print("FINISH WRITING")
         self.files_written.append(partition_name)
         with self.lock_current_write:
@@ -207,9 +237,13 @@ class SortingHandlerStage2:
             if is_everything_read and is_everything_sorted and is_everything_written:
                 is_everything_done = True
 
+        print("WRITING_RESULTS_FILE STAGE 2")
+        with open(f's3://{self.write_bucket}/results_stage2/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage2_{self.uuid}.json', 'w') as results_file:
+            json.dump({str(self.uuid): "DONE"}, results_file)
+        self.logger.handlers.pop()
+        self.logger.handlers.pop()
+
         print("DONE")
-        # with open(f'results/finished_{next(iter(self.partition_data))}') as res_file:
-        #     json.dump({"result": "OK"}, res_file)
 
 
 class FileStatusStage2(Enum):
