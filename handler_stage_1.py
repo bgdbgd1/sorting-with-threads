@@ -5,7 +5,7 @@ from enum import Enum
 from threading import Lock
 
 import uuid
-from smart_open import open
+# from smart_open import open
 
 import numpy as np
 from custom_logger import get_logger
@@ -67,8 +67,11 @@ class SortingHandlerStage1:
 
         with self.lock_buffers_filled:
             self.buffers_filled += 1
+
         self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
-        with open(f's3://{self.read_bucket}/{self.read_dir}/{file_name}', 'rb') as file:
+
+        with open(f'{self.read_dir}/{file_name}', 'rb') as file:
+        # with open(f's3://{self.read_bucket}/{self.read_dir}/{file_name}', 'rb') as file:
             file_content = file.read()
             buf = io.BytesIO()
             buf.write(file_content)
@@ -159,7 +162,8 @@ class SortingHandlerStage1:
 
         file_info['status'] = FileStatusStage1.WRITING
         self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
-        with open(f's3://{self.write_bucket}/{self.write_dir}/{file_name}', 'wb') as file:
+        with open(f'{self.write_dir}/{file_name}', 'wb') as file:
+        # with open(f's3://{self.write_bucket}/{self.write_dir}/{file_name}', 'wb') as file:
             file.write(memoryview(file_info['buffer']))
         self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
 
@@ -200,12 +204,12 @@ class SortingHandlerStage1:
                     self.writing_threads.submit(self.write_file, file)
 
         print("WRITING_RESULTS_FILE STAGE 1")
-        with open(f's3://{self.write_bucket}/results_stage1/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage1_{self.uuid}.json', 'w') as locations_file:
-            json.dump(self.locations, locations_file)
+        # with open(f's3://{self.write_bucket}/results_stage1/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage1_{self.uuid}.json', 'w') as locations_file:
+        #     json.dump(self.locations, locations_file)
         self.logger.handlers.pop()
         self.logger.handlers.pop()
-
         print("DONE")
+        return self.locations
 
 
 class FileStatusStage1(Enum):
