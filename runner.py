@@ -17,7 +17,7 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
         intervals
     )
     file_names = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    read_dir = "read_files"
+    read_dir = f"read_files_generated/{file_size}MB-{nr_files}files"
     intermediate_dir = "intermediate_files"
     write_dir = "write_files"
     config = {
