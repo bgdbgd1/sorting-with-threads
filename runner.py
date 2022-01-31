@@ -6,9 +6,11 @@ from handler_stage_2 import SortingHandlerStage2
 
 
 def run_experiment(experiment_number, nr_files, file_size, intervals):
+    read_bucket = "read"
+    intermediate_bucket = "intermediate"
+    write_bucket = "final"
+
     process_uuid = uuid.uuid4()
-    results_bucket = 'output-sorting-experiments'
-    prefix_results_stage_1 = f'results_stage1/experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}/results_stage1_'
     logger = get_logger(
         'main_handler',
         'main_handler',
@@ -16,7 +18,8 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
         file_size,
         intervals
     )
-    file_names = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    file_names = [str(i) for i in range(int(nr_files))]
+
     read_dir = f"read_files_generated/{file_size}MB-{nr_files}files"
     intermediate_dir = "intermediate_files"
     write_dir = "write_files"
@@ -28,8 +31,9 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
 
     stage_1_handler = SortingHandlerStage1(
-        read_bucket='input-sorting-experiments',
-        write_bucket='output-sorting-experiments',
+        read_bucket=read_bucket,
+        intermediate_bucket=intermediate_bucket,
+        write_bucket=write_bucket,
         read_dir=read_dir,
         write_dir=intermediate_dir,
         initial_files=file_names,
@@ -54,8 +58,9 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
                 data_for_stage_2[file_partition].append(positions)
 
     stage_2_handler = SortingHandlerStage2(
-        read_bucket='output-sorting-experiments',
-        write_bucket='output-sorting-experiments',
+        read_bucket=read_bucket,
+        intermediate_bucket=intermediate_bucket,
+        write_bucket=write_bucket,
         read_dir=intermediate_dir,
         write_dir=write_dir,
         partitions=data_for_stage_2,

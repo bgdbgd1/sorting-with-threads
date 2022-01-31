@@ -8,11 +8,13 @@ import uuid
 # from smart_open import open
 
 import numpy as np
+from minio import Minio
+
 from custom_logger import get_logger
 
 
 class SortingHandlerStage1:
-    def __init__(self, read_bucket, write_bucket, read_dir, write_dir, initial_files, experiment_number, config, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, read_dir, write_dir, initial_files, experiment_number, config, **kwargs):
         self.files_read = {}
 
         self.read_files = 0
@@ -42,6 +44,7 @@ class SortingHandlerStage1:
         self.uuid = uuid.uuid4()
 
         self.read_bucket = read_bucket
+        self.intermediate_bucket = intermediate_bucket
         self.write_bucket = write_bucket
         self.read_dir = read_dir
         self.write_dir = write_dir
@@ -54,6 +57,12 @@ class SortingHandlerStage1:
             config['nr_files'],
             config['file_size'],
             config['intervals']
+        )
+        self.minio_client = Minio(
+            "127.0.0.1:9000",
+            access_key="minioadmin",
+            secret_key="minioadmin",
+            secure=False
         )
 
     def read_file(self, file_name):
@@ -69,14 +78,14 @@ class SortingHandlerStage1:
             self.buffers_filled += 1
 
         self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
-
-        with open(f'{self.read_dir}/{file_name}', 'rb') as file:
+        file_content = self.minio_client.get_object(self.read_bucket, file_name).data
+        # with open(f'{self.read_dir}/{file_name}', 'rb') as file:
         # with open(f's3://{self.read_bucket}/{self.read_dir}/{file_name}', 'rb') as file:
-            file_content = file.read()
-            buf = io.BytesIO()
-            buf.write(file_content)
-            self.files_read[file_name] = {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ, 'lock': Lock()}
-            self.read_files += 1
+        #     file_content = file.read()
+        buf = io.BytesIO()
+        buf.write(file_content)
+        self.files_read[file_name] = {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ, 'lock': Lock()}
+        self.read_files += 1
         self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file.")
 
         with self.lock_current_read:
@@ -162,9 +171,10 @@ class SortingHandlerStage1:
 
         file_info['status'] = FileStatusStage1.WRITING
         self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
-        with open(f'{self.write_dir}/{file_name}', 'wb') as file:
+        self.minio_client.put_object(self.intermediate_bucket, file_name, io.BytesIO(file_info['buffer'].tobytes()), length=file_info['buffer'].size * 100)
+        # with open(f'{self.write_dir}/{file_name}', 'wb') as file:
         # with open(f's3://{self.write_bucket}/{self.write_dir}/{file_name}', 'wb') as file:
-            file.write(memoryview(file_info['buffer']))
+        #     file.write(memoryview(file_info['buffer']))
         self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
 
         file_info['buffer'] = None

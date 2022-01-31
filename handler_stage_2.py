@@ -7,6 +7,8 @@ from threading import Lock
 
 import boto3
 import numpy as np
+from minio import Minio
+
 from S3File import S3File
 from smart_open import open
 import uuid
@@ -14,7 +16,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    def __init__(self, read_bucket, write_bucket, read_dir, write_dir, partitions, experiment_number, config, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, read_dir, write_dir, partitions, experiment_number, config, **kwargs):
         self.files_in_read = {}
         self.files_read = {}
 
@@ -45,6 +47,7 @@ class SortingHandlerStage2:
         self.uuid = uuid.uuid4()
 
         self.read_bucket = read_bucket
+        self.intermediate_bucket = intermediate_bucket
         self.write_bucket = write_bucket
         self.read_dir = read_dir
         self.write_dir = write_dir
@@ -63,6 +66,12 @@ class SortingHandlerStage2:
             config['nr_files'],
             config['file_size'],
             config['intervals']
+        )
+        self.minio_client = Minio(
+            "127.0.0.1:9000",
+            access_key="minioadmin",
+            secret_key="minioadmin",
+            secure=False
         )
 
     def read_partition(self, partition_name, file_name, start_index, end_index):
@@ -88,10 +97,16 @@ class SortingHandlerStage2:
         # s3 = boto3.resource("s3")
         process_uuid = uuid.uuid4()
         self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
-        with open(f'{self.read_dir}/{file_name}', 'rb') as read_file:
-            read_file.seek(start_index * 100, 1)
-            file_content = read_file.read((end_index - start_index + 1) * 100)
-            read_file.seek(0, 0)
+        file_content = self.minio_client.get_object(
+            bucket_name=self.intermediate_bucket,
+            object_name=file_name,
+            offset=start_index * 100,
+            length=(end_index - start_index + 1) * 100
+        ).data
+        # with open(f'{self.read_dir}/{file_name}', 'rb') as read_file:
+        #     read_file.seek(start_index * 100, 1)
+        #     file_content = read_file.read((end_index - start_index + 1) * 100)
+        #     read_file.seek(0, 0)
         # s3_object = s3.Object(bucket_name=self.read_bucket, key=f'{self.read_dir}/{file_name}')
         # s3file = S3File(s3_object, position=start_index * 100)
         # file_content = s3file.read(size=(end_index + 1) * 100 - start_index * 100)
@@ -160,9 +175,10 @@ class SortingHandlerStage2:
         process_uuid = uuid.uuid4()
         self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
         try:
-            with open(f'{self.write_dir}/{partition_name}', 'wb') as file:
+            self.minio_client.put_object(self.write_bucket, partition_name, io.BytesIO(self.files_sorted[partition_name].tobytes()), length=self.files_sorted[partition_name].size * 100)
+            # with open(f'{self.write_dir}/{partition_name}', 'wb') as file:
             # with open(f's3://{self.write_bucket}/{self.write_dir}/{partition_name}', 'wb') as file:
-                file.write(memoryview(self.files_sorted[partition_name]))
+            #     file.write(memoryview(self.files_sorted[partition_name]))
         except:
             with self.lock_current_write:
                 self.current_write -= 1
