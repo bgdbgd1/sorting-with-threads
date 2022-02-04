@@ -73,6 +73,11 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 2.')
     logger.handlers.pop()
     logger.handlers.pop()
+    print(f"--------------------------FINISH EXPERIMENT NUMBER {experiment_number}-------------------------------")
+    print(f"--------------------------FINISH EXPERIMENT NUMBER {experiment_number}-------------------------------")
+    print(f"--------------------------FINISH EXPERIMENT NUMBER {experiment_number}-------------------------------")
+    print(f"--------------------------FINISH EXPERIMENT NUMBER {experiment_number}-------------------------------")
+    print(f"--------------------------FINISH EXPERIMENT NUMBER {experiment_number}-------------------------------")
 
 
 if __name__ == '__main__':

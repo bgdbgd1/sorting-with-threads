@@ -266,9 +266,9 @@ class SortingHandlerStage2:
             if is_everything_read and is_everything_sorted and is_everything_written:
                 is_everything_done = True
 
-        print("WRITING_RESULTS_FILE STAGE 2")
-        with open(f's3://{self.write_bucket}/results_stage2/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage2_{self.uuid}.json', 'w') as results_file:
-            json.dump({str(self.uuid): "DONE"}, results_file)
+        print("========FINISH STAGE 2===========")
+        # with open(f's3://{self.write_bucket}/results_stage2/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage2_{self.uuid}.json', 'w') as results_file:
+        #     json.dump({str(self.uuid): "DONE"}, results_file)
         self.logger.handlers.pop()
         self.logger.handlers.pop()
 
