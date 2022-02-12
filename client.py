@@ -113,8 +113,6 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
     for ip, data in listed_data_for_stage_2_per_ip.items():
         data_for_stage_2_per_ip.update({ip: dict(data)})
 
-    return
-
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 2.')
     for ip, data in data_for_stage_2_per_ip.items():
         requests.post(
