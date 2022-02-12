@@ -1,44 +1,41 @@
 import json
 from time import sleep
 
-import boto3
 import requests
 import uuid
-from smart_open import open
+
+from minio import Minio
 from custom_logger import get_logger
-# ips = [
-#     'http://localhost:5000',
-#
-# ]
-# CODE FOR SPLITTING PAYLOAD AMONG MULTIPLE INSTANCES
-# files = [file_location.split('/')[1] for file_location in glob.glob('read_files/*')]
-# files_per_ip = {}
-#
-# # Split the files equally among the VMs
-# for i in range(len(ips)):
-#     files_per_ip.update(
-#         {
-#             ips[i]: {
-#                 'file_names': files[i * (len(files) // len(ips)): (i+1) * (len(files) // len(ips))],
-#                 'read_dir': 'read_files',
-#                 'write_dir': 'write_files'
-#             }
-#         }
-#     )
-#     if i == len(ips) - 1 and len(files) % len(ips) != 0:
-#         files_per_ip[ips[i]] += files[(i+1) * (len(files) // len(ips)):]
-#
-# # Call APIs of all VMs with the data each one needs to handle
-# for ip, data in files_per_ip.items():
-#     requests.post(f'{ip}/sorting/stage1', data=data)
-#
 
 
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
+    # Instantiate MinIO client
+    minio_client = Minio(
+        "127.0.0.1:9000",
+        access_key="minioadmin",
+        secret_key="minioadmin",
+        secure=False
+    )
+
+    # Split load evenly on IPs
+    ips = [
+        'http://localhost:5000',
+        'http://localhost:5001',
+    ]
+    files = [str(i) for i in range(int(nr_files))]
+    files_per_ip = {}
+    for i in range(len(ips)):
+        files_per_ip.update(
+            {
+                ips[i]: files[i * (len(files) // len(ips)): (i+1) * (len(files) // len(ips))]
+            }
+        )
+        if i == len(ips) - 1 and len(files) % len(ips) != 0:
+            files_per_ip[ips[i]] += files[(i+1) * (len(files) // len(ips)):]
+
     process_uuid = uuid.uuid4()
-    results_bucket = 'output-sorting-experiments'
-    prefix_results_stage_1 = f'results_stage1/experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}/results_stage1_'
-    conn = boto3.client('s3')
+    results_bucket = 'status'
+    prefix_results_stage_1 = f'result_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
 
     logger = get_logger(
         'main_handler',
@@ -49,31 +46,32 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
     )
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
-    requests.post(
-        'http://localhost:5000/sorting/stage1',
-        json={
-            "read_dir": "10mb-10files-input",
-            "write_dir": "10mb-10files-intermediate",
-            "file_names": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-            "config": {
-                "file_size": '10MB',
-                'nr_files': '10',
-                'intervals': '256'
-            },
-            "experiment_number": experiment_number
-        }
-    )
 
+    # Send data to servers
+    for ip, data in files_per_ip.items():
+        requests.post(
+            f'{ip}/sorting/stage1',
+            json={
+                "file_names": data,
+                "config": {
+                    "file_size": file_size,
+                    'nr_files': nr_files,
+                    'intervals': intervals,
+                },
+                "experiment_number": experiment_number
+            }
+        )
+
+    # Check if all servers finished STAGE 1
     file_found = False
-    all_objects = None
-    all_obj = None
-    files_keys = []
-
+    object_names = set()
     while not file_found:
-        all_obj = conn.list_objects(Bucket=results_bucket, Prefix=prefix_results_stage_1)
-        all_objects = all_obj.get('Contents')
-
-        if all_objects is not None and len(all_objects) == 1:
+        nr_report_files = 0
+        all_obj = minio_client.list_objects(bucket_name=results_bucket, prefix=prefix_results_stage_1)
+        for obj in all_obj:
+            nr_report_files += 1
+            object_names.add(obj.object_name)
+        if nr_report_files == (len(ips) * experiment_number):
             file_found = True
         else:
             print("Sleeping")
@@ -81,32 +79,14 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
 
-    # return
-
     data_from_stage_1 = {}
     data_for_stage_2 = {}
 
-    for result_stage1 in all_objects:
-        if result_stage1['Key'] == f'{prefix_results_stage_1}':
-            continue
-        with open(f's3://{results_bucket}/{result_stage1["Key"]}', 'r') as file:
-            content = json.loads(file.read())
-            data_from_stage_1.update(content)
-    # Check whether the first stage has finished by pulling the files
-    # found_all_files = False
-    # results_stage1_files = []
-    # while not found_all_files:
-    #     results_stage1_files = glob.glob('results/*')
-    #     if len(results_stage1_files) == len(ips):
-    #         found_all_files = True
-    #     else:
-    #         print("Sleeping")
-    #         sleep(1)
+    object_names = list(object_names)
 
-    # for file in results_stage1_files:
-    #     with open(file, 'r') as results_file:
-    #         results = json.load(results_file)
-    #         data_from_stage_1.update(results)
+    for result_stage1 in object_names:
+        content = json.loads(minio_client.get_object(bucket_name=results_bucket, object_name=result_stage1).data.decode())
+        data_from_stage_1.update(content)
 
     for file, file_data in data_from_stage_1.items():
         for file_partition, positions in file_data.items():
@@ -119,43 +99,52 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
             else:
                 data_for_stage_2[file_partition].append(positions)
 
-    # demo_data_stage2 = {
-    # }
-    # for i, (key, value) in enumerate(data_for_stage_2.items()):
-    #     if i == 2:
-    #         break
-    #     demo_data_stage2.update({key: value})
+    listed_data_for_stage_2 = list(data_for_stage_2.items())
+    listed_data_for_stage_2_per_ip = {}
+    data_for_stage_2_per_ip = {}
+    for i, ip in enumerate(ips):
+        listed_data_for_stage_2_per_ip.update(
+            {
+                ip: listed_data_for_stage_2[i * (len(data_for_stage_2) // len(ips)): (i+1) * (len(listed_data_for_stage_2) // len(ips))]
+            }
+        )
+        if i == len(ips) - 1 and len(listed_data_for_stage_2) % len(ips) != 0:
+            listed_data_for_stage_2_per_ip[ips[i]] += listed_data_for_stage_2[(i + 1) * (len(listed_data_for_stage_2) // len(ips)):]
+    for ip, data in listed_data_for_stage_2_per_ip.items():
+        data_for_stage_2_per_ip.update({ip: dict(data)})
+
+    return
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 2.')
-
-    requests.post(
-        'http://localhost:5000/sorting/stage2',
-        json={
-            'partitions': data_for_stage_2,
-            "config": {
-                "file_size": '10MB',
-                'nr_files': '10',
-                'intervals': '256'
-            },
-            "experiment_number": experiment_number
-        }
-    )
+    for ip, data in data_for_stage_2_per_ip.items():
+        requests.post(
+            f'{ip}/sorting/stage2',
+            json={
+                'partitions': data,
+                "config": {
+                    "file_size": file_size,
+                    'nr_files': nr_files,
+                    'intervals': intervals,
+                },
+                "experiment_number": experiment_number
+            }
+        )
 
     file_found = False
-    all_objects = None
-    all_obj = None
-    files_keys = []
-    prefix_results_stage_2 = f'results_stage2/experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}/results_stage2_'
-
+    prefix_results_stage_2 = f'results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
+    object_names = set()
     while not file_found:
-        all_obj = conn.list_objects(Bucket=results_bucket, Prefix=prefix_results_stage_2)
-        all_objects = all_obj.get('Contents')
-        # all_objects = my_bucket.objects.filter(Prefix=prefix_results)
-        # The length of the files list must be bigger than 1 because it also lists the prefix folder itself
-        if all_objects is not None and len(all_objects) == 1:
+        nr_report_files = 0
+        all_obj = minio_client.list_objects(bucket_name=results_bucket, prefix=prefix_results_stage_2)
+        for obj in all_obj:
+            nr_report_files += 1
+            object_names.add(obj.object_name)
+        if nr_report_files == (len(ips) * experiment_number):
             file_found = True
         else:
-            sleep(1)
+            print("Sleeping")
+            sleep(3)
+
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 2.')
 
     logger.handlers.pop()
@@ -164,5 +153,5 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
 
 
 if __name__ == '__main__':
-    for i in range(3):
+    for i in range(1, 2):
         run_sorting_experiment(i, '10', '10MB', '256')

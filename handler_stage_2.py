@@ -16,7 +16,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, read_dir, write_dir, partitions, experiment_number, config, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, read_dir=None, write_dir=None, **kwargs):
         self.files_in_read = {}
         self.files_read = {}
 
@@ -49,6 +49,7 @@ class SortingHandlerStage2:
         self.read_bucket = read_bucket
         self.intermediate_bucket = intermediate_bucket
         self.write_bucket = write_bucket
+        self.status_bucket = status_bucket
         self.read_dir = read_dir
         self.write_dir = write_dir
         self.partitions = partitions
@@ -267,6 +268,10 @@ class SortingHandlerStage2:
                 is_everything_done = True
 
         print("========FINISH STAGE 2===========")
+        self.minio_client.put_object(
+            self.status_bucket,
+            f'results_stage2_experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}_{self.uuid}.json',
+            io.BytesIO(b'done'), length=4)
         # with open(f's3://{self.write_bucket}/results_stage2/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage2_{self.uuid}.json', 'w') as results_file:
         #     json.dump({str(self.uuid): "DONE"}, results_file)
         self.logger.handlers.pop()

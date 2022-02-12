@@ -1,6 +1,5 @@
 from custom_logger import get_logger
 import uuid
-import json
 from handler_stage_1 import SortingHandlerStage1
 from handler_stage_2 import SortingHandlerStage2
 
@@ -9,6 +8,7 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
     read_bucket = "read"
     intermediate_bucket = "intermediate"
     write_bucket = "final"
+    status_bucket = "status"
 
     process_uuid = uuid.uuid4()
     logger = get_logger(
@@ -34,6 +34,7 @@ def run_experiment(experiment_number, nr_files, file_size, intervals):
         read_bucket=read_bucket,
         intermediate_bucket=intermediate_bucket,
         write_bucket=write_bucket,
+        status_bucket=status_bucket,
         read_dir=read_dir,
         write_dir=intermediate_dir,
         initial_files=file_names,

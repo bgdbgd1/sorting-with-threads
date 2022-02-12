@@ -5,6 +5,9 @@ from flask import Flask, request
 
 from handler_stage_1 import SortingHandlerStage1
 from handler_stage_2 import SortingHandlerStage2
+
+import sys
+
 app = Flask(__name__)
 
 
@@ -16,16 +19,16 @@ def hello_world():
 @app.route("/sorting/stage1", methods=['POST'])
 def sorting_stage1():
     request_data = json.loads(request.data)
-    read_dir = request_data.get('read_dir')
-    write_dir = request_data.get('write_dir')
+    # read_dir = request_data.get('read_dir')
+    # write_dir = request_data.get('write_dir')
     file_names = request_data.get('file_names')
     experiment_number = request_data.get('experiment_number')
     config = request_data.get('config')
 
-    if read_dir is None:
-        return "'read_dir' attribute not found", 400
-    if write_dir is None:
-        return "'write_dir' attribute not found", 400
+    # if read_dir is None:
+    #     return "'read_dir' attribute not found", 400
+    # if write_dir is None:
+    #     return "'write_dir' attribute not found", 400
     if file_names is None:
         return "'file_names' attribute not found", 400
     if experiment_number is None:
@@ -41,14 +44,15 @@ def sorting_stage1():
             return "'intervals' attribute not found for config", 400
 
     handler = SortingHandlerStage1(
-        read_bucket='input-sorting-experiments',
-        write_bucket='output-sorting-experiments',
-        read_dir=read_dir,
-        write_dir=write_dir,
+        read_bucket='read',
+        write_bucket='final',
+        intermediate_bucket='intermediate',
+        status_bucket='status',
         initial_files=file_names,
         experiment_number=experiment_number,
         config=config,
     )
+    # handler.execute_stage1()
     Thread(target=handler.execute_stage1).start()
     return "Processing"
 
@@ -74,10 +78,10 @@ def sorting_stage2():
             return "'intervals' attribute not found for config", 400
 
     handler = SortingHandlerStage2(
-        read_bucket='output-sorting-experiments',
-        write_bucket='output-sorting-experiments',
-        read_dir='10mb-10files-intermediate',
-        write_dir='10mb-10files-output',
+        read_bucket='read',
+        write_bucket='final',
+        intermediate_bucket='intermediate',
+        status_bucket='status',
         partitions=partitions,
         experiment_number=experiment_number,
         config=config
@@ -88,4 +92,7 @@ def sorting_stage2():
 
 
 if __name__ == '__main__':
-    app.run()
+    port = '5000'
+    if len(sys.argv) == 2:
+        port = sys.argv[1]
+    app.run(port=int(port))

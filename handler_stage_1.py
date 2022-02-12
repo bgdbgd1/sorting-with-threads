@@ -14,7 +14,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage1:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, read_dir, write_dir, initial_files, experiment_number, config, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, initial_files, experiment_number, config, read_dir=None, write_dir=None, **kwargs):
         self.files_read = {}
 
         self.read_files = 0
@@ -40,15 +40,21 @@ class SortingHandlerStage1:
         self.lock_current_determine_categories = Lock()
         self.lock_current_write = Lock()
         self.lock_buffers_filled = Lock()
+        self.lock_write_locations = Lock()
         self.locations = {}
+        self.locations_2 = {}
         self.uuid = uuid.uuid4()
 
         self.read_bucket = read_bucket
         self.intermediate_bucket = intermediate_bucket
         self.write_bucket = write_bucket
+        self.status_bucket = status_bucket
         self.read_dir = read_dir
         self.write_dir = write_dir
         self.initial_files = initial_files
+        for file in initial_files:
+            self.locations_2[file] = {}
+
         self.experiment_number = experiment_number
         self.config = config
         self.logger = get_logger(
@@ -152,7 +158,17 @@ class SortingHandlerStage1:
             'end_index': nr_elements,
             'file_name': file_name
         }
-        self.locations.update(locations)
+        with self.lock_write_locations:
+            self.locations.update(locations)
+            self.locations_2[file_name].update(
+                {
+                    new_file_name: {
+                        'start_index': start_index,
+                        'end_index': nr_elements,
+                        'file_name': file_name
+                    }
+                }
+            )
         self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
 
         self.determined_categories_files += 1
@@ -214,8 +230,13 @@ class SortingHandlerStage1:
                     self.writing_threads.submit(self.write_file, file)
 
         print("WRITING_RESULTS_FILE STAGE 1")
-        # with open(f's3://{self.write_bucket}/results_stage1/experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}/results_stage1_{self.uuid}.json', 'w') as locations_file:
-        #     json.dump(self.locations, locations_file)
+        utfcontent = json.dumps(self.locations).encode('utf-8')
+        self.minio_client.put_object(
+            self.status_bucket,
+            f'result_stage1_experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}_{self.uuid}.json',
+            io.BytesIO(utfcontent), length=len(utfcontent)
+        )
+
         self.logger.handlers.pop()
         self.logger.handlers.pop()
         print("DONE")
