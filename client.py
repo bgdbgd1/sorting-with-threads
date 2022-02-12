@@ -1,4 +1,5 @@
 import json
+import sys
 from time import sleep
 
 import requests
@@ -8,7 +9,7 @@ from minio import Minio
 from custom_logger import get_logger
 
 
-def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
+def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, hosts):
     # Instantiate MinIO client
     minio_client = Minio(
         "127.0.0.1:9000",
@@ -18,10 +19,12 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
     )
 
     # Split load evenly on IPs
-    ips = [
-        'http://localhost:5000',
-        'http://localhost:5001',
-    ]
+    # ips = [
+    #     'http://localhost:5000',
+    #     'http://localhost:5001',
+    # ]
+    ips = hosts
+
     files = [str(i) for i in range(int(nr_files))]
     files_per_ip = {}
     for i in range(len(ips)):
@@ -152,4 +155,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals):
 
 if __name__ == '__main__':
     for i in range(1, 2):
-        run_sorting_experiment(i, '10', '10MB', '256')
+        run_sorting_experiment(i, '10', '10MB', '256', sys.argv[1:])
