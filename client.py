@@ -12,7 +12,7 @@ from custom_logger import get_logger
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, hosts, minio_ip):
     # Instantiate MinIO client
     minio_client = Minio(
-        f"{minio_ip}:9000",
+        f"127.0.0.1:9000",
         access_key="minioadmin",
         secret_key="minioadmin",
         secure=False
