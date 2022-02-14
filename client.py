@@ -10,6 +10,7 @@ from custom_logger import get_logger
 
 
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, hosts, minio_ip):
+    breakpoint()
     # Instantiate MinIO client
     minio_client = Minio(
         f"127.0.0.1:9000",
@@ -49,7 +50,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ho
     )
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
-
+    breakpoint()
     # Send data to servers
     for ip, data in files_per_ip.items():
         requests.post(
