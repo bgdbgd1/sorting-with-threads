@@ -9,7 +9,7 @@ from handler_stage_2 import SortingHandlerStage2
 import sys
 
 app = Flask(__name__)
-
+minio_ip = ''
 
 @app.route('/')
 def hello_world():
@@ -51,6 +51,7 @@ def sorting_stage1():
         initial_files=file_names,
         experiment_number=experiment_number,
         config=config,
+        minio_ip=minio_ip
     )
     # handler.execute_stage1()
     Thread(target=handler.execute_stage1).start()
@@ -84,7 +85,8 @@ def sorting_stage2():
         status_bucket='status',
         partitions=partitions,
         experiment_number=experiment_number,
-        config=config
+        config=config,
+        minio_ip=minio_ip
     )
     Thread(target=handler.execute_stage2).start()
     # handler.execute_stage2()
@@ -93,6 +95,10 @@ def sorting_stage2():
 
 if __name__ == '__main__':
     port = '5000'
-    if len(sys.argv) == 2:
-        port = sys.argv[1]
-    app.run(port=int(port))
+    if len(sys.argv) == 1:
+        print("PLEASE PROVIDE THE MINIO IP AND OPTIONALLY THE PORT OF THE APP")
+        exit()
+    minio_ip = sys.argv[1]
+    if len(sys.argv) == 3:
+        port = sys.argv[2]
+    app.run(host='0.0.0.0', port=int(port))

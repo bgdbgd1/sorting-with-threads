@@ -16,7 +16,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, read_dir=None, write_dir=None, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, read_dir=None, write_dir=None, **kwargs):
         self.files_in_read = {}
         self.files_read = {}
 
@@ -69,7 +69,7 @@ class SortingHandlerStage2:
             config['intervals']
         )
         self.minio_client = Minio(
-            "127.0.0.1:9000",
+            f"{minio_ip}:9000",
             access_key="minioadmin",
             secret_key="minioadmin",
             secure=False
