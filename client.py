@@ -9,10 +9,10 @@ from minio import Minio
 from custom_logger import get_logger
 
 
-def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, hosts):
+def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, hosts, minio_ip):
     # Instantiate MinIO client
     minio_client = Minio(
-        "127.0.0.1:9000",
+        f"{minio_ip}:9000",
         access_key="minioadmin",
         secret_key="minioadmin",
         secure=False
@@ -155,4 +155,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ho
 
 if __name__ == '__main__':
     for i in range(1, 2):
-        run_sorting_experiment(i, '10', '10MB', '256', sys.argv[1:])
+        run_sorting_experiment(i, '10', '10MB', '256', sys.argv[1:], sys.argv[2:])
