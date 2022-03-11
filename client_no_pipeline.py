@@ -38,7 +38,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 
     process_uuid = uuid.uuid4()
     results_bucket = 'status'
-    prefix_results_stage_1 = f'results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
+    prefix_results_stage_1 = f'no_pipeline_results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
 
     logger = get_logger(
         'main_handler',
@@ -52,7 +52,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
     # Send data to servers
     for ip, data in files_per_ip.items():
         requests.post(
-            f'{ip}/sorting/pipeline/stage1',
+            f'{ip}/sorting/no-pipeline/stage1',
             json={
                 "file_names": data,
                 "config": {
@@ -118,7 +118,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 2.')
     for ip, data in data_for_stage_2_per_ip.items():
         requests.post(
-            f'{ip}/sorting/pipeline/stage2',
+            f'{ip}/sorting/no-pipeline/stage2',
             json={
                 'partitions': data,
                 "config": {
@@ -131,7 +131,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
         )
 
     file_found = False
-    prefix_results_stage_2 = f'results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
+    prefix_results_stage_2 = f'no_pipeline_results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
     object_names = set()
     while not file_found:
         nr_report_files = 0

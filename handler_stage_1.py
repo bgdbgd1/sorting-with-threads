@@ -36,6 +36,8 @@ class SortingHandlerStage1:
         self.determine_categories_threads = ThreadPoolExecutor(max_workers=1)
         self.writing_threads = ThreadPoolExecutor(max_workers=1)
 
+        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=4)
+
         self.lock_current_read = Lock()
         self.lock_current_determine_categories = Lock()
         self.lock_current_write = Lock()
@@ -85,9 +87,6 @@ class SortingHandlerStage1:
 
         self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
         file_content = self.minio_client.get_object(self.read_bucket, file_name).data
-        # with open(f'{self.read_dir}/{file_name}', 'rb') as file:
-        # with open(f's3://{self.read_bucket}/{self.read_dir}/{file_name}', 'rb') as file:
-        #     file_content = file.read()
         buf = io.BytesIO()
         buf.write(file_content)
         self.files_read[file_name] = {'buffer': buf.getbuffer(), 'status': FileStatusStage1.READ, 'lock': Lock()}
@@ -203,6 +202,100 @@ class SortingHandlerStage1:
         with self.lock_buffers_filled:
             self.buffers_filled -= 1
 
+    def execute_all_methods(self, file_name):
+        process_uuid = uuid.uuid4()
+        if self.files_read.get(file_name) or self.buffers_filled >= self.max_buffers_filled:
+            return
+        self.files_read.update({file_name: {'buffer': None, 'status': FileStatusStage1.IN_READ, 'lock': None}})
+
+        with self.lock_current_read:
+            self.current_read += 1
+
+        with self.lock_buffers_filled:
+            self.buffers_filled += 1
+
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
+        file_content = self.minio_client.get_object(self.read_bucket, file_name).data
+        buf = io.BytesIO()
+        buf.write(file_content)
+        np_buffer = np.frombuffer(buf.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
+
+        self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting determine categories.')
+        record_arr = np.sort(np_buffer, order='key')
+        self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting determine categories.')
+
+        self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
+
+        locations = {file_name: {}}
+        num_subcats = 1
+        first_char = None
+        start_index = 0
+        current_file_number_per_first_char = 1
+        diff = 256 // num_subcats
+        lower_margin = 0
+        upper_margin = diff
+        new_file_name = ''
+        nr_elements = 0
+        for nr_elements, rec in enumerate(record_arr):
+            key_array = bytearray(rec[0])
+            if first_char is None:
+                first_char = key_array[0]
+            new_file_name = f'{first_char}_{current_file_number_per_first_char}'
+
+            if key_array[0] != first_char or (key_array[1] < lower_margin or key_array[1] > upper_margin):
+
+                # TODO: update this to store it per initial file
+                locations[file_name][new_file_name] = {
+                    'start_index': start_index,
+                    'end_index': nr_elements - 1,
+                    'file_name': file_name
+                }
+
+                if key_array[0] != first_char:
+                    current_file_number_per_first_char = 1
+                    start_index = nr_elements
+                    lower_margin = 0
+                    upper_margin = diff
+                    first_char = key_array[0]
+                else:
+                    current_file_number_per_first_char += 1
+                    lower_margin = upper_margin + 1
+                    upper_margin = lower_margin + diff
+                    start_index = nr_elements
+
+        locations[file_name][new_file_name] = {
+            'start_index': start_index,
+            'end_index': nr_elements,
+            'file_name': file_name
+        }
+        with self.lock_write_locations:
+            self.locations.update(locations)
+            self.locations_2[file_name].update(
+                {
+                    new_file_name: {
+                        'start_index': start_index,
+                        'end_index': nr_elements,
+                        'file_name': file_name
+                    }
+                }
+            )
+        self.logger.info(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
+
+        self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
+        self.minio_client.put_object(
+            self.intermediate_bucket,
+            file_name,
+            io.BytesIO(record_arr.tobytes()),
+            length=record_arr.size * 100
+        )
+        self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
+
+        with self.lock_current_read:
+            self.current_read -= 1
+        with self.lock_buffers_filled:
+            self.buffers_filled -= 1
+
     def execute_stage1(self):
         while self.written_files < len(self.initial_files):
             for file in self.initial_files:
@@ -233,7 +326,31 @@ class SortingHandlerStage1:
         utfcontent = json.dumps(self.locations).encode('utf-8')
         self.minio_client.put_object(
             self.status_bucket,
-            f'result_stage1_experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}_{self.uuid}.json',
+            f'results_stage1_experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}_{self.uuid}.json',
+            io.BytesIO(utfcontent), length=len(utfcontent)
+        )
+
+        self.logger.handlers.pop()
+        self.logger.handlers.pop()
+        print("DONE")
+        return self.locations
+
+    def execute_stage1_without_pipelining(self):
+        while self.written_files < len(self.initial_files):
+            for file in self.initial_files:
+                file_data = self.files_read.get(file)
+                if (
+                        not file_data and
+                        self.current_read < self.max_read and
+                        self.buffers_filled < self.max_buffers_filled
+                ):
+                    self.no_pipelining_threads.submit(self.execute_all_methods, file)
+
+        print("WRITING_RESULTS_FILE STAGE 1")
+        utfcontent = json.dumps(self.locations).encode('utf-8')
+        self.minio_client.put_object(
+            self.status_bucket,
+            f'no_pipelining_results_stage1_experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}_{self.uuid}.json',
             io.BytesIO(utfcontent), length=len(utfcontent)
         )
 

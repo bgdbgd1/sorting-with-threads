@@ -5,12 +5,10 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
 from threading import Lock
 
-import boto3
 import numpy as np
 from minio import Minio
 
 from S3File import S3File
-from smart_open import open
 import uuid
 from custom_logger import get_logger
 
@@ -38,6 +36,7 @@ class SortingHandlerStage2:
         self.reading_threads = ThreadPoolExecutor(max_workers=2)
         self.sort_threads = ThreadPoolExecutor(max_workers=1)
         self.writing_threads = ThreadPoolExecutor(max_workers=1)
+        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=4)
 
         self.lock_current_read = Lock()
         self.lock_current_sort = Lock()
@@ -192,6 +191,39 @@ class SortingHandlerStage2:
             self.current_write -= 1
         self.buffers_filled -= 1
 
+    def execute_all_methods(self, partition_name, partition_data):
+        process_uuid = uuid.uuid4()
+        buffer = io.BytesIO()
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
+
+        for file_name, data in partition_data.items():
+            self.logger.info(
+                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
+
+            file_content = self.minio_client.get_object(
+                bucket_name=self.intermediate_bucket,
+                object_name=file_name,
+                offset=data['start_index'] * 100,
+                length=(data['end_index'] - data['start_index'] + 1) * 100
+            ).data
+            self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+            buffer.write(file_content)
+
+        self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
+        np_array = np.frombuffer(
+            buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
+        )
+        np_array = np.sort(np_array, order='key')
+        self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
+        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
+        self.minio_client.put_object(self.write_bucket, partition_name, io.BytesIO(np_array.tobytes()),
+                                     length=np_array.size * 100)
+        self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
+
     def execute_stage2(self):
         is_everything_done = False
         is_everything_read = False
@@ -279,6 +311,20 @@ class SortingHandlerStage2:
 
         print("DONE")
 
+    def execute_stage2_without_pipelining(self):
+        for partition_name, partition_data in self.partitions.items():
+            self.no_pipelining_threads.submit(
+                self.execute_all_methods,
+                partition_name,
+                partition_data
+            )
+        print("========FINISH STAGE 2===========")
+        self.minio_client.put_object(
+            self.status_bucket,
+            f'no_pipelining_results_stage2_experiment_{self.experiment_number}_nr_files_{self.config["nr_files"]}_file_size_{self.config["file_size"]}_intervals_{self.config["intervals"]}_{self.uuid}.json',
+            io.BytesIO(b'done'), length=4)
+        self.logger.handlers.pop()
+        self.logger.handlers.pop()
 
 class FileStatusStage2(Enum):
     NOT_READ = 'NOT_READ'
