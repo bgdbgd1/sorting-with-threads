@@ -8,6 +8,14 @@ import uuid
 from minio import Minio
 from custom_logger import get_logger
 
+READING_THREADS_STAGE_1 = 8
+DET_CAT_THREADS_STAGE_1 = 8
+WRITING_THREADS_STAGE_1 = 8
+
+READING_THREADS_STAGE_2 = 20
+SORT_THREADS_STAGE_2 = 2
+WRITING_THREADS_STAGE_2 = 2
+
 
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, minio_ip, hosts):
     # Instantiate MinIO client
@@ -60,7 +68,10 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                     'nr_files': nr_files,
                     'intervals': intervals,
                 },
-                "experiment_number": experiment_number
+                "experiment_number": experiment_number,
+                "reading_threads": READING_THREADS_STAGE_1,
+                "det_cat_threads": DET_CAT_THREADS_STAGE_1,
+                "writing_threads": WRITING_THREADS_STAGE_1
             }
         )
 
@@ -126,7 +137,10 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                     'nr_files': nr_files,
                     'intervals': intervals,
                 },
-                "experiment_number": experiment_number
+                "experiment_number": experiment_number,
+                "reading_threads": READING_THREADS_STAGE_2,
+                "sort_threads": SORT_THREADS_STAGE_2,
+                "writing_threads": WRITING_THREADS_STAGE_2
             }
         )
 
