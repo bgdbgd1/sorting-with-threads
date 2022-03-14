@@ -24,6 +24,9 @@ def sorting_stage1():
     file_names = request_data.get('file_names')
     experiment_number = request_data.get('experiment_number')
     config = request_data.get('config')
+    reading_threads = request_data.get('reading_threads')
+    det_cat_threads = request_data.get('det_cat_threads')
+    writing_threads = request_data.get('writing_threads')
 
     # if read_dir is None:
     #     return "'read_dir' attribute not found", 400
@@ -33,6 +36,12 @@ def sorting_stage1():
         return "'file_names' attribute not found", 400
     if experiment_number is None:
         return "'experiment_number' attribute not found", 400
+    if reading_threads is None:
+        return "'reading_threads' attribute not found", 400
+    if det_cat_threads is None:
+        return "'det_cat_threads' attribute not found", 400
+    if writing_threads is None:
+        return "'writing_threads' attribute not found", 400
     if config is None:
         return "'config' attribute not found", 400
     else:
@@ -51,7 +60,7 @@ def sorting_stage1():
         initial_files=file_names,
         experiment_number=experiment_number,
         config=config,
-        minio_ip=minio_ip
+        minio_ip=minio_ip,
     )
     # handler.execute_stage1()
     Thread(target=handler.execute_stage1).start()
@@ -64,10 +73,19 @@ def sorting_stage2():
     partitions = request_data.get('partitions')
     experiment_number = request_data.get('experiment_number')
     config = request_data.get('config')
+    reading_threads = request_data.get('reading_threads')
+    sort_threads = request_data.get('sort_threads')
+    writing_threads = request_data.get('writing_threads')
     if partitions is None:
         return "'partitions' attribute not found", 400
     if experiment_number is None:
         return "'experiment_number' attribute not found", 400
+    if reading_threads is None:
+        return "'reading_threads' attribute not found", 400
+    if sort_threads is None:
+        return "'sort_threads' attribute not found", 400
+    if writing_threads is None:
+        return "'writing_threads' attribute not found", 400
     if config is None:
         return "'config' attribute not found", 400
     else:
@@ -86,11 +104,15 @@ def sorting_stage2():
         partitions=partitions,
         experiment_number=experiment_number,
         config=config,
-        minio_ip=minio_ip
+        minio_ip=minio_ip,
+        reading_threads=reading_threads,
+        sort_threads=sort_threads,
+        writing_threads=writing_threads
     )
     Thread(target=handler.execute_stage2).start()
     # handler.execute_stage2()
     return "Sorting"
+
 
 @app.route("/sorting/no-pipeline/stage1", methods=['POST'])
 def sorting_stage1_no_pipeline():

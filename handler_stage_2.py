@@ -14,7 +14,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, read_dir=None, write_dir=None, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, read_dir=None, write_dir=None, reading_threads=1, sort_threads=1, writing_threads=1, **kwargs):
         self.files_in_read = {}
         self.files_read = {}
 
@@ -22,21 +22,21 @@ class SortingHandlerStage2:
         self.sorted_files = 0
         self.is_result_written = False
 
-        self.max_read = 2
-        self.max_sort = 1
-        self.max_write = 1
+        self.max_read = reading_threads
+        self.max_sort = sort_threads
+        self.max_write = writing_threads
 
         self.current_read = 0
         self.current_sort = 0
         self.current_write = 0
 
         self.buffers_filled = 0
-        self.max_buffers_filled = 1
+        self.max_buffers_filled = 50
 
-        self.reading_threads = ThreadPoolExecutor(max_workers=2)
-        self.sort_threads = ThreadPoolExecutor(max_workers=1)
-        self.writing_threads = ThreadPoolExecutor(max_workers=1)
-        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=4)
+        self.reading_threads = ThreadPoolExecutor(max_workers=reading_threads)
+        self.sort_threads = ThreadPoolExecutor(max_workers=sort_threads)
+        self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
+        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
 
         self.lock_current_read = Lock()
         self.lock_current_sort = Lock()
