@@ -36,13 +36,14 @@ class SortingHandlerStage1:
         self.determine_categories_threads = ThreadPoolExecutor(max_workers=det_cat_threads)
         self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
 
-        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
+        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=4)
 
         self.lock_current_read = Lock()
         self.lock_current_determine_categories = Lock()
         self.lock_current_write = Lock()
         self.lock_buffers_filled = Lock()
         self.lock_write_locations = Lock()
+        self.lock_written_files = Lock()
         self.locations = {}
         self.locations_2 = {}
         self.uuid = uuid.uuid4()
@@ -194,7 +195,8 @@ class SortingHandlerStage1:
 
         file_info['buffer'] = None
         file_info['status'] = FileStatusStage1.WRITTEN
-        self.written_files += 1
+        with self.lock_written_files:
+            self.written_files += 1
 
         with self.lock_current_write:
             self.current_write -= 1
@@ -290,7 +292,8 @@ class SortingHandlerStage1:
             length=record_arr.size * 100
         )
         self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
-
+        with self.lock_written_files:
+            self.written_files += 1
         with self.lock_current_read:
             self.current_read -= 1
         with self.lock_buffers_filled:

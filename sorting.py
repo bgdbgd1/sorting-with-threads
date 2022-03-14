@@ -146,7 +146,7 @@ def sorting_stage1_no_pipeline():
         minio_ip=minio_ip
     )
     # handler.execute_stage1()
-    Thread(target=handler.execute_stage1).start()
+    Thread(target=handler.execute_stage1_without_pipelining).start()
     return "Processing"
 
 
@@ -185,6 +185,7 @@ def sorting_stage2_no_pipeline():
 
 
 if __name__ == '__main__':
+    # e.g. python sorting.py 127.0.0.1 5000
     port = '5000'
     if len(sys.argv) == 1:
         print("PLEASE PROVIDE THE MINIO IP AND OPTIONALLY THE PORT OF THE APP")

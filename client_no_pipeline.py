@@ -38,7 +38,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 
     process_uuid = uuid.uuid4()
     results_bucket = 'status'
-    prefix_results_stage_1 = f'no_pipeline_results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
+    prefix_results_stage_1 = f'no_pipelining_results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
 
     logger = get_logger(
         'main_handler',
@@ -131,7 +131,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
         )
 
     file_found = False
-    prefix_results_stage_2 = f'no_pipeline_results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
+    prefix_results_stage_2 = f'no_pipelining_results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
     object_names = set()
     while not file_found:
         nr_report_files = 0
@@ -155,4 +155,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 2):
-        run_sorting_experiment(i, '10', '10MB', '256', sys.argv[1], sys.argv[2:])
+        run_sorting_experiment(i, '100', '1GB', '256', sys.argv[1], sys.argv[2:])

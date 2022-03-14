@@ -3,7 +3,7 @@ import os
 import subprocess
 
 
-def generate_data(files_dir, prefix_dir, nr_files, num_records):
+def generate_data(files_dir, nr_files, num_records):
     # current_dir = os.getcwd()
     # main_read_dirs = glob.glob(f"{current_dir}/*")
     # res = [i for i in main_read_dirs if files_dir in i]
@@ -20,4 +20,4 @@ def generate_data(files_dir, prefix_dir, nr_files, num_records):
 
 
 if __name__ == '__main__':
-    generate_data('/local/bee700/read_files_minio/read', '10MB-10files', 10, 100000)
+    generate_data('/local/bee700/minio_storage/read', 100, 10000000)
