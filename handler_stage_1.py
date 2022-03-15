@@ -36,7 +36,7 @@ class SortingHandlerStage1:
         self.determine_categories_threads = ThreadPoolExecutor(max_workers=det_cat_threads)
         self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
 
-        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=4)
+        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
 
         self.lock_current_read = Lock()
         self.lock_current_determine_categories = Lock()
