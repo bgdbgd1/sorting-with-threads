@@ -38,7 +38,7 @@ function start_tc {
     [ "$?" -gt "0" ] && tc qdisc del dev $interface root; sleep 1
 
     # start the tc configuration
-    sudo $TC qdisc add dev eth4 root netem delay 50ms 30ms 25%
+    sudo $TC qdisc add dev $interface root netem delay 50ms 30ms 25%
     sudo $TC qdisc add dev $interface root handle 1: htb default 30
 #    $TC class add dev $interface parent 1: classid 1:1 htb rate $interface_speed burst 15k
 
