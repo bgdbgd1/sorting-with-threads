@@ -34,26 +34,26 @@ FILTER="$TC filter add dev $interface protocol ip parent 1: prio 1 u32"
 #
 
 function start_tc {
-    tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
+    sudo tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
     [ "$?" -gt "0" ] && tc qdisc del dev $interface root; sleep 1
 
     # start the tc configuration
-    $TC qdisc add dev eth4 root netem delay 50ms 30ms 25%
-    $TC qdisc add dev $interface root handle 1: htb default 30
+    sudo $TC qdisc add dev eth4 root netem delay 50ms 30ms 25%
+    sudo $TC qdisc add dev $interface root handle 1: htb default 30
 #    $TC class add dev $interface parent 1: classid 1:1 htb rate $interface_speed burst 15k
 
-    $TC class add dev $interface parent 1:1 classid 1:10 htb rate $download_limit burst 15k
-    $TC class add dev $interface parent 1:1 classid 1:20 htb rate $upload_limit burst 15k
+    sudo $TC class add dev $interface parent 1:1 classid 1:10 htb rate $download_limit burst 15k
+    sudo $TC class add dev $interface parent 1:1 classid 1:20 htb rate $upload_limit burst 15k
 
-    $TC qdisc add dev $interface parent 1:10 handle 10: sfq perturb 10
-    $TC qdisc add dev $interface parent 1:20 handle 20: sfq perturb 10
+    sudo $TC qdisc add dev $interface parent 1:10 handle 10: sfq perturb 10
+    sudo $TC qdisc add dev $interface parent 1:20 handle 20: sfq perturb 10
 
     # Apply the filter rules
 
     # Catch-all IP rules, which will set global limit on the server
     # for all IP addresses on the server.
-    $FILTER match ip dst 0.0.0.0/0 flowid 1:10
-    $FILTER match ip src 0.0.0.0/0 flowid 1:20
+    sudo $FILTER match ip dst 0.0.0.0/0 flowid 1:10
+    sudo $FILTER match ip src 0.0.0.0/0 flowid 1:20
 
     # If you want to limit the upload/download limit based on specific IP address
     # you can comment the above catch-all filter and uncomment these:
@@ -66,12 +66,12 @@ function start_tc {
 # Removes the network speed limiting and restores the default TC configuration
 #
 function stop_tc {
-    tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
+    sudo tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
     [ "$?" -gt "0" ] && tc qdisc del dev $interface root
 }
 
 function show_status {
-        $TC -s qdisc ls dev $interface
+        sudo $TC -s qdisc ls dev $interface
 }
 #
 # Display help
