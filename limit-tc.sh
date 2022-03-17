@@ -10,8 +10,8 @@ TC=$(which tc)
 # ip - IP address of your server, change this if you don't want to use
 #      the default catch all filters.
 #
-interface=eth0
-interface_speed=100mbit
+interface=enp0s3
+interface_speed=800mbit
 ip=4.1.2.3 # The IP address bound to the interface
 
 # Define the upload and download speed limit, follow units can be
@@ -21,8 +21,8 @@ ip=4.1.2.3 # The IP address bound to the interface
 # kbit: kilobits per second
 # mbit: megabits per second
 # bps: Bytes per second
-download_limit=512kbit
-upload_limit=10mbit
+download_limit=800mbit
+upload_limit=800mbit
 
 
 # Filter options for limiting the intended interface.
@@ -39,7 +39,7 @@ function start_tc {
 
     # start the tc configuration
     $TC qdisc add dev $interface root handle 1: htb default 30
-    $TC class add dev $interface parent 1: classid 1:1 htb rate $interface_speed burst 15k
+#    $TC class add dev $interface parent 1: classid 1:1 htb rate $interface_speed burst 15k
 
     $TC class add dev $interface parent 1:1 classid 1:10 htb rate $download_limit burst 15k
     $TC class add dev $interface parent 1:1 classid 1:20 htb rate $upload_limit burst 15k
