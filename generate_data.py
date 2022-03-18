@@ -20,4 +20,4 @@ def generate_data(files_dir, nr_files, num_records):
 
 
 if __name__ == '__main__':
-    generate_data('/local/bee700/minio_storage/read', 100, 10000000)
+    generate_data('/local/bee700/minio_storage/read', 1000, 1000000)
