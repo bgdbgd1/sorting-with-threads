@@ -14,7 +14,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, read_dir=None, write_dir=None, reading_threads=1, sort_threads=1, writing_threads=1, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, server_number, read_dir=None, write_dir=None, reading_threads=1, sort_threads=1, writing_threads=1, **kwargs):
         self.files_in_read = {}
         self.files_read = {}
 
@@ -42,6 +42,7 @@ class SortingHandlerStage2:
         self.lock_current_sort = Lock()
         self.lock_current_write = Lock()
         self.lock_buffers_filled = Lock()
+        self.lock_logger = Lock()
 
         self.uuid = uuid.uuid4()
 
@@ -65,7 +66,8 @@ class SortingHandlerStage2:
             'stage_2',
             config['nr_files'],
             config['file_size'],
-            config['intervals']
+            config['intervals'],
+            server_number=server_number
         )
         self.minio_client = Minio(
             f"{minio_ip}:9000",
@@ -73,6 +75,10 @@ class SortingHandlerStage2:
             secret_key="minioadmin",
             secure=False
         )
+
+    def write_log_message(self, message):
+        with self.lock_logger:
+            self.logger.info(message)
 
     def read_partition(self, partition_name, file_name, start_index, end_index):
         partition_data_in_read = self.files_in_read.get(partition_name)
@@ -96,7 +102,9 @@ class SortingHandlerStage2:
 
         # s3 = boto3.resource("s3")
         process_uuid = uuid.uuid4()
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
         file_content = self.minio_client.get_object(
             bucket_name=self.intermediate_bucket,
             object_name=file_name,
@@ -110,8 +118,9 @@ class SortingHandlerStage2:
         # s3_object = s3.Object(bucket_name=self.read_bucket, key=f'{self.read_dir}/{file_name}')
         # s3file = S3File(s3_object, position=start_index * 100)
         # file_content = s3file.read(size=(end_index + 1) * 100 - start_index * 100)
-
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
         if not self.files_read.get(partition_name):
             self.files_read.update(
                 {
@@ -148,12 +157,16 @@ class SortingHandlerStage2:
             print("SORT")
 
             process_uuid = uuid.uuid4()
-            self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
+            self.write_log_message(
+            # self.logger.info(
+                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
             np_array = np.frombuffer(
                 buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
             )
             np_array = np.sort(np_array, order='key')
-            self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
+            self.write_log_message(
+            # self.logger.info(
+                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
             self.files_sorted.update({partition_name: np_array})
 
             print("FINISHED SORTING")
@@ -173,7 +186,9 @@ class SortingHandlerStage2:
         with self.lock_current_write:
             self.current_write += 1
         process_uuid = uuid.uuid4()
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
         try:
             self.minio_client.put_object(self.write_bucket, partition_name, io.BytesIO(self.files_sorted[partition_name].tobytes()), length=self.files_sorted[partition_name].size * 100)
             # with open(f'{self.write_dir}/{partition_name}', 'wb') as file:
@@ -183,7 +198,9 @@ class SortingHandlerStage2:
             with self.lock_current_write:
                 self.current_write -= 1
             return
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
 
         print("FINISH WRITING")
         self.files_written.append(partition_name)
@@ -194,10 +211,13 @@ class SortingHandlerStage2:
     def execute_all_methods(self, partition_name, partition_data):
         process_uuid = uuid.uuid4()
         buffer = io.BytesIO()
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
 
         for file_name, data in partition_data.items():
-            self.logger.info(
+            self.write_log_message(
+            # self.logger.info(
                 f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
 
             file_content = self.minio_client.get_object(
@@ -206,22 +226,31 @@ class SortingHandlerStage2:
                 offset=data['start_index'] * 100,
                 length=(data['end_index'] - data['start_index'] + 1) * 100
             ).data
-            self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+            self.write_log_message(
+            # self.logger.info(
+                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
             buffer.write(file_content)
 
-        self.logger.info(
+        self.write_log_message(
+        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
         np_array = np.frombuffer(
             buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
         )
         np_array = np.sort(np_array, order='key')
-        self.logger.info(
+        self.write_log_message(
+        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
-        self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
+        self.write_log_message(
+        # self.logger.info(
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
         self.minio_client.put_object(self.write_bucket, partition_name, io.BytesIO(np_array.tobytes()),
                                      length=np_array.size * 100)
-        self.logger.info(
+        self.write_log_message(
+        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
 
     def execute_stage2(self):

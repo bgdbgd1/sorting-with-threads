@@ -47,6 +47,8 @@ phrases_stage_2 = {
         'Finished writing partition'
     ]
 }
+
+nr_errored_lines = 1
 # results_data data structure
 # {
 #     'experiment_{experiment_number}': {
@@ -64,11 +66,16 @@ formatted_data = {}
 
 def format_line(stage_name, phrase, line, task_name):
     results = re.search(f'(.*) {stage_name} INFO experiment_number:(.*); uuid:(.*);', line)
-    rs = results.groups()
-    time = results.group(1)
-    experiment_number = results.group(2)
-    process_uuid = results.group(3)
-    update_formatted_data(experiment_number, stage_name, phrase, process_uuid, time, task_name)
+    # rs = results.groups()
+    try:
+        time = results.group(1)
+        experiment_number = results.group(2)
+        process_uuid = results.group(3)
+        update_formatted_data(experiment_number, stage_name, phrase, process_uuid, time, task_name)
+    except:
+        # print(nr_errored_lines)
+        print(line)
+        # nr_errored_lines += 1
 
 
 def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, time, task_name):
@@ -142,7 +149,7 @@ def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, t
 
 
 def process_logs(nr_files, file_size, intervals):
-    log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}/*.log')
+    log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_no_pipeline/*.log')
     for experiment_log_file in log_files:
         stage_name = [stage for stage in stages if stage in experiment_log_file][0]
         with open(experiment_log_file, 'r') as log_file:
@@ -160,10 +167,9 @@ def process_logs(nr_files, file_size, intervals):
                     for phrase in phrase_tasks:
                         if phrase in line:
                             format_line(stage_name, phrase, line, task_name)
-
-    with open(f'results/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}.json', 'w') as results_file:
+    with open(f'results/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}.json', 'w+') as results_file:
         json.dump(formatted_data, results_file)
 
 
 if __name__ == '__main__':
-    process_logs('10', '10MB', '256')
+    process_logs('1000', '100MB', '256')

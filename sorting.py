@@ -10,6 +10,7 @@ import sys
 
 app = Flask(__name__)
 minio_ip = ''
+SERVER_NUMBER = None
 
 @app.route('/')
 def hello_world():
@@ -61,6 +62,7 @@ def sorting_stage1():
         experiment_number=experiment_number,
         config=config,
         minio_ip=minio_ip,
+        server_number=SERVER_NUMBER
     )
     # handler.execute_stage1()
     Thread(target=handler.execute_stage1).start()
@@ -107,7 +109,8 @@ def sorting_stage2():
         minio_ip=minio_ip,
         reading_threads=reading_threads,
         sort_threads=sort_threads,
-        writing_threads=writing_threads
+        writing_threads=writing_threads,
+        server_number=SERVER_NUMBER
     )
     Thread(target=handler.execute_stage2).start()
     # handler.execute_stage2()
@@ -143,7 +146,8 @@ def sorting_stage1_no_pipeline():
         initial_files=file_names,
         experiment_number=experiment_number,
         config=config,
-        minio_ip=minio_ip
+        minio_ip=minio_ip,
+        server_number=SERVER_NUMBER
     )
     # handler.execute_stage1()
     Thread(target=handler.execute_stage1_without_pipelining).start()
@@ -178,7 +182,8 @@ def sorting_stage2_no_pipeline():
         partitions=partitions,
         experiment_number=experiment_number,
         config=config,
-        minio_ip=minio_ip
+        minio_ip=minio_ip,
+        server_number=SERVER_NUMBER
     )
     Thread(target=handler.execute_stage2).start()
     return "Sorting"
@@ -187,10 +192,8 @@ def sorting_stage2_no_pipeline():
 if __name__ == '__main__':
     # e.g. python sorting.py 127.0.0.1 5000
     port = '5000'
-    if len(sys.argv) == 1:
-        print("PLEASE PROVIDE THE MINIO IP AND OPTIONALLY THE PORT OF THE APP")
-        exit()
-    minio_ip = sys.argv[1]
-    if len(sys.argv) == 3:
-        port = sys.argv[2]
+    SERVER_NUMBER = sys.argv[1]
+    minio_ip = sys.argv[2]
+    if len(sys.argv) == 4:
+        port = sys.argv[3]
     app.run(host='0.0.0.0', port=int(port))
