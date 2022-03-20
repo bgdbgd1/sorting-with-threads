@@ -328,6 +328,7 @@ class SortingHandlerStage2:
             if is_everything_read and is_everything_sorted and is_everything_written:
                 is_everything_done = True
 
+        self.write_log_message("========FINISH STAGE 2===========")
         print("========FINISH STAGE 2===========")
         self.minio_client.put_object(
             self.status_bucket,
@@ -347,6 +348,8 @@ class SortingHandlerStage2:
                 partition_name,
                 partition_data
             )
+
+        self.write_log_message("========FINISH STAGE 2===========")
         print("========FINISH STAGE 2===========")
         self.minio_client.put_object(
             self.status_bucket,
