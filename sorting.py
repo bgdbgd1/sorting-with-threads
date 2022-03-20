@@ -196,4 +196,4 @@ if __name__ == '__main__':
     minio_ip = sys.argv[2]
     if len(sys.argv) == 4:
         port = sys.argv[3]
-    app.run(host='0.0.0.0', port=int(port))
+    app.run(host='10.149.0.16', port=int(port))
