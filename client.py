@@ -53,7 +53,8 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
         'main_handler',
         nr_files,
         file_size,
-        intervals
+        intervals,
+        server_number='main_handler'
     )
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
