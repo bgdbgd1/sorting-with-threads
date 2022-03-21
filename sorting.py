@@ -195,7 +195,7 @@ if __name__ == '__main__':
     port = '5000'
 
     minio_ip = sys.argv[1]
-    SERVER_NUMBER = sys.argv[1]
+    SERVER_NUMBER = sys.argv[2]
 
     # if len(sys.argv) == 4:
     #     port = sys.argv[3]
