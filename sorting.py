@@ -185,16 +185,22 @@ def sorting_stage2_no_pipeline():
         minio_ip=minio_ip,
         server_number=SERVER_NUMBER
     )
-    Thread(target=handler.execute_stage2).start()
+    Thread(target=handler.execute_stage2_without_pipelining).start()
     return "Sorting"
 
 
 if __name__ == '__main__':
-    # e.g. python sorting.py 127.0.0.1 5000
+    # e.g. python sorting.py 127.0.0.1 1
     port = '5000'
+
+    minio_ip = sys.argv[1]
     SERVER_NUMBER = sys.argv[1]
 
-    minio_ip = sys.argv[2]
-    if len(sys.argv) == 4:
-        port = sys.argv[3]
+    # if len(sys.argv) == 4:
+    #     port = sys.argv[3]
     app.run(host=f'10.149.0.{SERVER_NUMBER}', port=int(port))
+
+    # Local settings
+    # SERVER_NUMBER = 1
+    # minio_ip = '127.0.0.1'
+    # app.run(host='0.0.0.0', port=5000)

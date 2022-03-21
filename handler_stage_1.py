@@ -93,7 +93,7 @@ class SortingHandlerStage1:
             self.buffers_filled += 1
 
         self.write_log_message(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
-        # self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
+
         file_content = self.minio_client.get_object(self.read_bucket, file_name).data
         buf = io.BytesIO()
         buf.write(file_content)
@@ -101,7 +101,6 @@ class SortingHandlerStage1:
         self.read_files += 1
 
         self.write_log_message(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file.")
-        # self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file.")
 
         with self.lock_current_read:
             self.current_read -= 1
@@ -118,16 +117,16 @@ class SortingHandlerStage1:
         file_info['status'] = FileStatusStage1.DETERMINING_CATEGORIES
 
         self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting determine categories.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting determine categories.')
+
         np_buffer = np.frombuffer(file_info['buffer'], dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
         record_arr = np.sort(np_buffer, order='key')
+
         self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting determine categories.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting determine categories.')
         file_info['buffer'] = record_arr
         file_info['status'] = FileStatusStage1.DETERMINED_CATEGORIES
 
-        self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
+        self.write_log_message(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
 
         locations = {file_name: {}}
         num_subcats = 1
@@ -182,8 +181,8 @@ class SortingHandlerStage1:
                     }
                 }
             )
-            self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
+            self.write_log_message(
+                f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
 
         self.determined_categories_files += 1
 
@@ -200,14 +199,13 @@ class SortingHandlerStage1:
             self.current_write += 1
 
         file_info['status'] = FileStatusStage1.WRITING
-        self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
+        self.write_log_message(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
+
         self.minio_client.put_object(self.intermediate_bucket, file_name, io.BytesIO(file_info['buffer'].tobytes()), length=file_info['buffer'].size * 100)
-        # with open(f'{self.write_dir}/{file_name}', 'wb') as file:
-        # with open(f's3://{self.write_bucket}/{self.write_dir}/{file_name}', 'wb') as file:
-        #     file.write(memoryview(file_info['buffer']))
-        self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
+
+        self.write_log_message(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
 
         file_info['buffer'] = None
         file_info['status'] = FileStatusStage1.WRITTEN
@@ -232,22 +230,29 @@ class SortingHandlerStage1:
         with self.lock_buffers_filled:
             self.buffers_filled += 1
 
+        ################### READ INITIAL FILE ###################
         self.write_log_message(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
-        # self.logger.info(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file.")
+
         file_content = self.minio_client.get_object(self.read_bucket, file_name).data
+
+        self.write_log_message(f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file.")
+
         buf = io.BytesIO()
         buf.write(file_content)
         np_buffer = np.frombuffer(buf.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
 
-        self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting determine categories.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting determine categories.')
+        ################### SORT DETERMINE CATEGORIES ###################
+        self.write_log_message(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting determine categories.')
+
         record_arr = np.sort(np_buffer, order='key')
 
-        self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting determine categories.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting determine categories.')
+        self.write_log_message(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting determine categories.')
 
-        self.write_log_message(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
-        # self.logger.info(f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
+        ################### DETERMINE CATEGORIES ###################
+        self.write_log_message(
+            f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started determine categories.')
 
         locations = {file_name: {}}
         num_subcats = 1
@@ -303,21 +308,22 @@ class SortingHandlerStage1:
                 }
             )
         self.write_log_message(
-        # self.logger.info(
             f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
 
+        ##################### WRITING FILE #####################
         self.write_log_message(
-        # self.logger.info(
             f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
+
         self.minio_client.put_object(
             self.intermediate_bucket,
             file_name,
             io.BytesIO(record_arr.tobytes()),
             length=record_arr.size * 100
         )
+
         self.write_log_message(
-        # self.logger.info(
             f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
+
         with self.lock_written_files:
             self.written_files += 1
         with self.lock_current_read:

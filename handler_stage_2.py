@@ -103,8 +103,8 @@ class SortingHandlerStage2:
         # s3 = boto3.resource("s3")
         process_uuid = uuid.uuid4()
         self.write_log_message(
-        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
+
         file_content = self.minio_client.get_object(
             bucket_name=self.intermediate_bucket,
             object_name=file_name,
@@ -119,8 +119,8 @@ class SortingHandlerStage2:
         # s3file = S3File(s3_object, position=start_index * 100)
         # file_content = s3file.read(size=(end_index + 1) * 100 - start_index * 100)
         self.write_log_message(
-        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
+
         if not self.files_read.get(partition_name):
             self.files_read.update(
                 {
@@ -158,14 +158,14 @@ class SortingHandlerStage2:
 
             process_uuid = uuid.uuid4()
             self.write_log_message(
-            # self.logger.info(
                 f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
+
             np_array = np.frombuffer(
                 buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
             )
             np_array = np.sort(np_array, order='key')
+
             self.write_log_message(
-            # self.logger.info(
                 f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
             self.files_sorted.update({partition_name: np_array})
 
@@ -187,19 +187,14 @@ class SortingHandlerStage2:
             self.current_write += 1
         process_uuid = uuid.uuid4()
         self.write_log_message(
-        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
         try:
             self.minio_client.put_object(self.write_bucket, partition_name, io.BytesIO(self.files_sorted[partition_name].tobytes()), length=self.files_sorted[partition_name].size * 100)
-            # with open(f'{self.write_dir}/{partition_name}', 'wb') as file:
-            # with open(f's3://{self.write_bucket}/{self.write_dir}/{partition_name}', 'wb') as file:
-            #     file.write(memoryview(self.files_sorted[partition_name]))
         except:
             with self.lock_current_write:
                 self.current_write -= 1
             return
         self.write_log_message(
-        # self.logger.info(
             f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
 
         print("FINISH WRITING")
@@ -211,14 +206,14 @@ class SortingHandlerStage2:
     def execute_all_methods(self, partition_name, partition_data):
         process_uuid = uuid.uuid4()
         buffer = io.BytesIO()
+
+        ################### READ PARTITIONS ###################
         self.write_log_message(
-        # self.logger.info(
-            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition.")
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading category.")
 
         for file_name, data in partition_data.items():
             self.write_log_message(
-            # self.logger.info(
-                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
+                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started reading partition file {file_name}.")
 
             file_content = self.minio_client.get_object(
                 bucket_name=self.intermediate_bucket,
@@ -227,31 +222,29 @@ class SortingHandlerStage2:
                 length=(data['end_index'] - data['start_index'] + 1) * 100
             ).data
             self.write_log_message(
-            # self.logger.info(
-                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+                f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition file {file_name}.")
             buffer.write(file_content)
 
         self.write_log_message(
-        # self.logger.info(
-            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading partition.")
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished reading category.")
+
+        ################### SORT CATEGORY #################
         self.write_log_message(
-        # self.logger.info(
-            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting partition.")
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started sorting category.")
         np_array = np.frombuffer(
             buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
         )
         np_array = np.sort(np_array, order='key')
         self.write_log_message(
-        # self.logger.info(
-            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished sorting category.")
+
+        ################### WRITE CATEGORY ###################
         self.write_log_message(
-        # self.logger.info(
-            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing partition.")
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Started writing category.")
         self.minio_client.put_object(self.write_bucket, partition_name, io.BytesIO(np_array.tobytes()),
                                      length=np_array.size * 100)
         self.write_log_message(
-        # self.logger.info(
-            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing partition.")
+            f"experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished writing category.")
 
     def execute_stage2(self):
         is_everything_done = False
@@ -343,6 +336,7 @@ class SortingHandlerStage2:
 
     def execute_stage2_without_pipelining(self):
         for partition_name, partition_data in self.partitions.items():
+            # self.execute_all_methods(partition_name, partition_data)
             self.no_pipelining_threads.submit(
                 self.execute_all_methods,
                 partition_name,
