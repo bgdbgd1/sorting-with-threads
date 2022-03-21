@@ -53,7 +53,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
     # Send data to servers
     for ip, data in files_per_ip.items():
         requests.post(
-            f'{ip}/sorting/pipeline/stage1',
+            f'{ip}/sorting/no-pipeline/stage1',
             json={
                 "file_names": data,
                 "config": {
