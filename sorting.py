@@ -123,7 +123,7 @@ def sorting_stage1_no_pipeline():
     file_names = request_data.get('file_names')
     experiment_number = request_data.get('experiment_number')
     config = request_data.get('config')
-
+    no_pipeline_threads = request_data.get('no_pipeline_threads')
     if file_names is None:
         return "'file_names' attribute not found", 400
     if experiment_number is None:
@@ -147,7 +147,8 @@ def sorting_stage1_no_pipeline():
         experiment_number=experiment_number,
         config=config,
         minio_ip=minio_ip,
-        server_number=SERVER_NUMBER
+        server_number=SERVER_NUMBER,
+        no_pipeline_threads=no_pipeline_threads
     )
     # handler.execute_stage1()
     Thread(target=handler.execute_stage1_without_pipelining).start()

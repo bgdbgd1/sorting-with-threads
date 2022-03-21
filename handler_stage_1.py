@@ -14,7 +14,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage1:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, initial_files, experiment_number, config, minio_ip, server_number, read_dir=None, write_dir=None, reading_threads=None, det_cat_threads=None, writing_threads=None, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, initial_files, experiment_number, config, minio_ip, server_number, read_dir=None, write_dir=None, reading_threads=None, det_cat_threads=None, writing_threads=None, no_pipeline_threads=None **kwargs):
         self.files_read = {}
 
         self.read_files = 0
@@ -36,7 +36,7 @@ class SortingHandlerStage1:
         self.determine_categories_threads = ThreadPoolExecutor(max_workers=det_cat_threads)
         self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
 
-        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
+        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=no_pipeline_threads)
 
         self.lock_current_read = Lock()
         self.lock_current_determine_categories = Lock()
