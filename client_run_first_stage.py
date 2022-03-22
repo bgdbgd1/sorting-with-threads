@@ -38,7 +38,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 
     process_uuid = uuid.uuid4()
     results_bucket = 'status'
-    prefix_results_stage_1 = f'results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
+    prefix_results_stage_1 = f'no_pipelining_results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
 
     logger = get_logger(
         'main_handler',
