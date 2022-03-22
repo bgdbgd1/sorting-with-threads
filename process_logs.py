@@ -161,7 +161,8 @@ def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, t
 
 
 def process_logs(nr_files, file_size, intervals, pipeline):
-    log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_eth4/*.log')
+    # log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_eth4/*.log')
+    log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}/*.log')
     for experiment_log_file in log_files:
         stage_name = [stage for stage in stages if stage in experiment_log_file][0]
         with open(experiment_log_file, 'r') as log_file:
@@ -186,4 +187,4 @@ def process_logs(nr_files, file_size, intervals, pipeline):
 
 if __name__ == '__main__':
     # process_logs('1000', '100MB', '256', pipeline='pipeline')
-    process_logs('1000', '100MB', '256', pipeline='no_pipeline')
+    process_logs('10', '100MB', '256', pipeline='no_pipeline')

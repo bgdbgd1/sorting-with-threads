@@ -48,9 +48,9 @@ def generate_ecdf(data, dir_name, file_name, xlabel, ylabel):
 
 
 def create_plots(nr_files, file_size, intervals, pipeline):
-    dir_name =f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_second'
+    dir_name =f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}'
 
-    with open(f'results/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_second.json', 'r') as results_file:
+    with open(f'results/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
         experiments_data = json.loads(results_file.read())
 
     # READ INITIAL FILES
@@ -121,6 +121,7 @@ def create_plots(nr_files, file_size, intervals, pipeline):
         xlabel='Write files to storage duration (s)',
         ylabel='CDF'
     )
+    return
 
     ###################### STAGE 2 ########################
 
@@ -205,5 +206,5 @@ def create_plots(nr_files, file_size, intervals, pipeline):
 
 
 if __name__ == '__main__':
-    # create_plots('1000', '100MB', '256', 'no_pipeline')
-    create_plots('1000', '100MB', '256', 'pipeline')
+    create_plots('10', '100MB', '256', 'no_pipeline')
+    # create_plots('10', '100MB', '256', 'pipeline')

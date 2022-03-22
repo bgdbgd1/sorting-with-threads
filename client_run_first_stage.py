@@ -87,4 +87,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 2):
-        run_sorting_experiment(i, '10', '100MB', '256', sys.argv[1], sys.argv[2:])
+        run_sorting_experiment(i, '100', '100MB', '256', sys.argv[1], sys.argv[2:])
