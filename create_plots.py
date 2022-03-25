@@ -40,17 +40,17 @@ def generate_ecdf(data, dir_name, file_name, xlabel, ylabel):
     plt.scatter(x=x, y=y)
     plt.xlabel(xlabel, fontsize=16)
     plt.ylabel(ylabel, fontsize=16)
-    if not os.path.exists(f'plots/{dir_name}'):
-        os.makedirs(f'plots/{dir_name}')
+    # if not os.path.exists(f'{dir_name}/plots/{dir_name}'):
+    #     os.makedirs(f'plots/{dir_name}')
 
-    plt.savefig(f'plots/{dir_name}/{file_name}')
+    plt.savefig(f'{dir_name}/{file_name}')
     plt.clf()
 
 
-def create_plots(nr_files, file_size, intervals, pipeline):
-    dir_name =f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}'
+def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
+    dir_name =f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_100_iterations_{nr_threads}_threads'
 
-    with open(f'results/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
+    with open(f'{dir_name}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
         experiments_data = json.loads(results_file.read())
 
     # READ INITIAL FILES
@@ -206,5 +206,5 @@ def create_plots(nr_files, file_size, intervals, pipeline):
 
 
 if __name__ == '__main__':
-    create_plots('10', '100MB', '256', 'no_pipeline')
+    create_plots('100', '100MB', '256', 'no_pipeline', 8)
     # create_plots('10', '100MB', '256', 'pipeline')
