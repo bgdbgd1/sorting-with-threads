@@ -209,5 +209,5 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
 
 
 if __name__ == '__main__':
-    create_plots('50', '100MB', '256', 'no_pipeline', 4)
+    create_plots('50', '100MB', '256', 'no_pipeline', 2)
     # create_plots('10', '100MB', '256', 'pipeline')
