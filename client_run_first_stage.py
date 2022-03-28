@@ -62,7 +62,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                     'intervals': intervals,
                 },
                 "experiment_number": experiment_number,
-                "no_pipeline_threads": 1
+                "no_pipeline_threads": 2
             }
         )
 
