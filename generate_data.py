@@ -6,7 +6,7 @@ from minio import Minio
 
 
 def generate_data_with_minio(files_dir, nr_files, num_records, minio_ip, bucket):
-    for i in range(nr_files):
+    for i in range(nr_files, nr_files*2):
         cmd = ['./gensort-1.5/gensort', f'-b{i * num_records}', str(num_records), f'{files_dir}/{i}']
         subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
@@ -45,4 +45,4 @@ def generate_data(files_dir, nr_files, num_records):
 
 if __name__ == '__main__':
     # generate_data('/local/bee700/minio_storage/read', 100, 1000000)
-    generate_data_with_minio('generated_data', 30, 1000000, '127.0.0.1', 'read')
+    generate_data_with_minio('generated_data', 100, 1000000, '127.0.0.1', 'read')
