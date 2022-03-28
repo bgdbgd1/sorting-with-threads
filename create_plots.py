@@ -11,21 +11,24 @@ def parse_results(experiments_data, stage_name, task_name, start_attribute, fini
     tasks_timestamps_total = []
     for experiment_number, experiment_data in experiments_data.items():
         for task, task_data in experiment_data[stage_name][task_name].items():
-            finish = datetime.strptime(task_data[finish_attribute], '%Y-%m-%d %H:%M:%S,%f')
-            start = datetime.strptime(task_data[start_attribute], '%Y-%m-%d %H:%M:%S,%f')
-            task_completion_time = finish - start
-            task_completion_time_in_seconds = task_completion_time.total_seconds()
-            tasks_timestamps_total.append(task_completion_time_in_seconds)
-            if tasks_timestamps_per_experiment.get(experiment_number) is None:
-                tasks_timestamps_per_experiment.update(
-                    {
-                        experiment_number: [task_completion_time_in_seconds]
-                    }
-                )
-            else:
-                tasks_timestamps_per_experiment[experiment_number].append(
-                    task_completion_time_in_seconds
-                )
+            try:
+                finish = datetime.strptime(task_data[finish_attribute], '%Y-%m-%d %H:%M:%S,%f')
+                start = datetime.strptime(task_data[start_attribute], '%Y-%m-%d %H:%M:%S,%f')
+                task_completion_time = finish - start
+                task_completion_time_in_seconds = task_completion_time.total_seconds()
+                tasks_timestamps_total.append(task_completion_time_in_seconds)
+                if tasks_timestamps_per_experiment.get(experiment_number) is None:
+                    tasks_timestamps_per_experiment.update(
+                        {
+                            experiment_number: [task_completion_time_in_seconds]
+                        }
+                    )
+                else:
+                    tasks_timestamps_per_experiment[experiment_number].append(
+                        task_completion_time_in_seconds
+                    )
+            except:
+                pass
 
     return {
         'tasks_timestamps_per_experiment': tasks_timestamps_per_experiment,
@@ -48,7 +51,7 @@ def generate_ecdf(data, dir_name, file_name, xlabel, ylabel):
 
 
 def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
-    dir_name =f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_100_iterations_{nr_threads}_threads'
+    dir_name =f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_100_iterations_{nr_threads}_threads_with_rules'
 
     with open(f'{dir_name}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
         experiments_data = json.loads(results_file.read())
@@ -206,5 +209,5 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
 
 
 if __name__ == '__main__':
-    create_plots('100', '100MB', '256', 'no_pipeline', 4)
+    create_plots('50', '100MB', '256', 'no_pipeline', 1)
     # create_plots('10', '100MB', '256', 'pipeline')
