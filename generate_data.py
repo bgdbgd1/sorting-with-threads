@@ -17,6 +17,10 @@ def generate_data_with_minio(files_dir, nr_files, num_records, minio_ip, bucket)
         secret_key="minioadmin",
         secure=False
     )
+    found = minio_client.bucket_exists(bucket)
+    if not found:
+        minio_client.make_bucket(bucket)
+
     for file_name in files:
         f_name = file_name.split('/')[-1]
         with open(file_name, 'rb') as file:
