@@ -6,7 +6,7 @@ from minio import Minio
 
 
 def generate_data_with_minio(files_dir, nr_files, num_records, minio_ip, bucket):
-    for i in range(nr_files, nr_files*2):
+    for i in range(60, 101):
         cmd = ['./gensort-1.5/gensort', f'-b{i * num_records}', str(num_records), f'{files_dir}/{i}']
         subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
