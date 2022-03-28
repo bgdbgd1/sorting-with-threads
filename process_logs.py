@@ -187,4 +187,4 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
 
 if __name__ == '__main__':
     # process_logs('1000', '100MB', '256', pipeline='pipeline')
-    process_logs('50', '100MB', '256', pipeline='no_pipeline', nr_parallel_threads=2)
+    process_logs('50', '100MB', '256', pipeline='no_pipeline', nr_parallel_threads=4)
