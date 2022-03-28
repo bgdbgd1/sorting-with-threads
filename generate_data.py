@@ -6,9 +6,9 @@ from minio import Minio
 
 
 def generate_data_with_minio(files_dir, nr_files, num_records, minio_ip, bucket):
-    for i in range(nr_files):
-        cmd = ['./gensort-1.5/gensort', f'-b{i * num_records}', str(num_records), f'{files_dir}/{i}']
-        subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    # for i in range(nr_files):
+    #     cmd = ['./gensort-1.5/gensort', f'-b{i * num_records}', str(num_records), f'{files_dir}/{i}']
+    #     subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
     files = glob.glob(f'{files_dir}/*')
     minio_client = Minio(
@@ -23,7 +23,7 @@ def generate_data_with_minio(files_dir, nr_files, num_records, minio_ip, bucket)
             minio_client.put_object(bucket, f_name, file, length=os.path.getsize(file_name))
 
 
-def generate_data(files_dir, nr_files, num_records, minio_ip, bucket):
+def generate_data(files_dir, nr_files, num_records):
     # current_dir = os.getcwd()
     # main_read_dirs = glob.glob(f"{current_dir}/*")
     # res = [i for i in main_read_dirs if files_dir in i]
