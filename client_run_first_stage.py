@@ -23,7 +23,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 
     found = minio_client.bucket_exists('status')
     if not found:
-        minio_client.make_bucket('statu')
+        minio_client.make_bucket('status')
 
     # Split load evenly on IPs
     # ips = [
