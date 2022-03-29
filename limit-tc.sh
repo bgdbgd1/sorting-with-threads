@@ -1,7 +1,7 @@
 #!/bin/bash
 # Full path to tc binary
 
-TC=$(which tc)
+#TC=$(which tc)
 
 #
 # NETWORK CONFIGURATION
@@ -10,9 +10,9 @@ TC=$(which tc)
 # ip - IP address of your server, change this if you don't want to use
 #      the default catch all filters.
 #
-interface=enp0s3
-interface_speed=800mbit
-ip=4.1.2.3 # The IP address bound to the interface
+interface=eth4
+interface_speed=100gbit
+ip=10.149.0.1 # The IP address bound to the interface
 
 # Define the upload and download speed limit, follow units can be
 # passed as a parameter:
@@ -21,12 +21,12 @@ ip=4.1.2.3 # The IP address bound to the interface
 # kbit: kilobits per second
 # mbit: megabits per second
 # bps: Bytes per second
-download_limit=800mbit
-upload_limit=800mbit
+download_limit=400mbit
+upload_limit=400mbit
 
 
 # Filter options for limiting the intended interface.
-FILTER="$TC filter add dev $interface protocol ip parent 1: prio 1 u32"
+FILTER="sudo /cm/shared/package/utils/bin/run-tc filter add dev $interface protocol ip parent 1: prio 1 u32"
 
 #
 # This function starts the TC rules and limits the upload and download speed
@@ -34,26 +34,25 @@ FILTER="$TC filter add dev $interface protocol ip parent 1: prio 1 u32"
 #
 
 function start_tc {
-    sudo tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
-    [ "$?" -gt "0" ] && tc qdisc del dev $interface root; sleep 1
+#    sudo tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
+#    [ "$?" -gt "0" ] && tc qdisc del dev $interface root; sleep 1
 
     # start the tc configuration
-    sudo $TC qdisc add dev $interface root netem delay 50ms 30ms 25%
-    sudo $TC qdisc add dev $interface root handle 1: htb default 30
-#    $TC class add dev $interface parent 1: classid 1:1 htb rate $interface_speed burst 15k
+    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface root handle 1: htb default 30
+    sudo /cm/shared/package/utils/bin/run-tc class add dev $interface parent 1: classid 1:1 htb rate $interface_speed burst 15k
 
-    sudo $TC class add dev $interface parent 1:1 classid 1:10 htb rate $download_limit burst 15k
-    sudo $TC class add dev $interface parent 1:1 classid 1:20 htb rate $upload_limit burst 15k
+    sudo /cm/shared/package/utils/bin/run-tc class add dev $interface parent 1:1 classid 1:10 htb rate $download_limit burst 15k
+    sudo /cm/shared/package/utils/bin/run-tc class add dev $interface parent 1:1 classid 1:20 htb rate $upload_limit burst 15k
 
-    sudo $TC qdisc add dev $interface parent 1:10 handle 10: sfq perturb 10
-    sudo $TC qdisc add dev $interface parent 1:20 handle 20: sfq perturb 10
+    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface parent 1:10 handle 10: sfq perturb 10
+    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface parent 1:20 handle 20: sfq perturb 10
 
     # Apply the filter rules
 
     # Catch-all IP rules, which will set global limit on the server
     # for all IP addresses on the server.
-    sudo $FILTER match ip dst 0.0.0.0/0 flowid 1:10
-    sudo $FILTER match ip src 0.0.0.0/0 flowid 1:20
+    $FILTER match ip dst 0.0.0.0/0 flowid 1:10
+    $FILTER match ip src 0.0.0.0/0 flowid 1:20
 
     # If you want to limit the upload/download limit based on specific IP address
     # you can comment the above catch-all filter and uncomment these:
@@ -66,12 +65,12 @@ function start_tc {
 # Removes the network speed limiting and restores the default TC configuration
 #
 function stop_tc {
-    sudo tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
-    [ "$?" -gt "0" ] && tc qdisc del dev $interface root
+    sudo /cm/shared/package/utils/bin/run-tc qdisc show dev $interface | grep -q "qdisc pfifo_fast 0"
+    [ "$?" -gt "0" ] && /cm/shared/package/utils/bin/run-tc qdisc del dev $interface root
 }
 
 function show_status {
-        sudo $TC -s qdisc ls dev $interface
+        /cm/shared/package/utils/bin/run-tc -s qdisc ls dev $interface
 }
 #
 # Display help
