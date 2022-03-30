@@ -7,7 +7,7 @@ from threading import Lock
 
 import numpy as np
 from minio import Minio
-
+import multiprocessing as mp
 from S3File import S3File
 import uuid
 from custom_logger import get_logger
@@ -36,7 +36,8 @@ class SortingHandlerStage2:
         self.reading_threads = ThreadPoolExecutor(max_workers=reading_threads)
         self.sort_threads = ThreadPoolExecutor(max_workers=sort_threads)
         self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
-        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
+        # self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
+        self.no_pipelining_threads = mp.Pool(24)
 
         self.lock_current_read = Lock()
         self.lock_current_sort = Lock()
@@ -337,10 +338,10 @@ class SortingHandlerStage2:
     def execute_stage2_without_pipelining(self):
         for partition_name, partition_data in self.partitions.items():
             # self.execute_all_methods(partition_name, partition_data)
-            self.no_pipelining_threads.submit(
+            # self.no_pipelining_threads.submit(
+            self.no_pipelining_threads.apply(
                 self.execute_all_methods,
-                partition_name,
-                partition_data
+                args=(partition_name, partition_data)
             )
 
         self.write_log_message("========FINISH STAGE 2===========")

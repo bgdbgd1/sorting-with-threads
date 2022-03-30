@@ -1,6 +1,7 @@
 import io
 import json
 from concurrent.futures.thread import ThreadPoolExecutor
+import multiprocessing as mp
 from enum import Enum
 from threading import Lock
 
@@ -36,8 +37,9 @@ class SortingHandlerStage1:
         self.determine_categories_threads = ThreadPoolExecutor(max_workers=det_cat_threads)
         self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
 
-        self.no_pipelining_threads = ThreadPoolExecutor(max_workers=no_pipeline_threads)
-
+        # self.no_pipelining_threads = ThreadPoolExecutor(max_workers=no_pipeline_threads)
+        # self.no_pipelining_threads = mp.Pool(mp.cpu_count())
+        self.no_pipelining_threads = mp.Pool(no_pipeline_threads)
         self.lock_current_read = Lock()
         self.lock_current_determine_categories = Lock()
         self.lock_current_write = Lock()
@@ -379,7 +381,8 @@ class SortingHandlerStage1:
                         self.current_read < self.max_read and
                         self.buffers_filled < self.max_buffers_filled
                 ):
-                    self.no_pipelining_threads.submit(self.execute_all_methods, file)
+                    self.no_pipelining_threads.apply(self.execute_all_methods, args=(file))
+                    # self.no_pipelining_threads.submit(self.execute_all_methods, file)
 
         print("WRITING_RESULTS_FILE STAGE 1")
         utfcontent = json.dumps(self.locations).encode('utf-8')

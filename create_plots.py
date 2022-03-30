@@ -52,7 +52,7 @@ def generate_ecdf(data, dir_name, file_name, xlabel, ylabel):
 
 def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
     # dir_name =f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_threads}_threads_with_rules_50MB_with_distributed_minio'
-    dir_name = 'logs_determine_bandwidth/tc_script_logs/4_threads_2'
+    dir_name = 'logs_determine_bandwidth/netem_logs/8_threads_2'
     with open(f'{dir_name}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
         experiments_data = json.loads(results_file.read())
 
@@ -209,5 +209,5 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
 
 
 if __name__ == '__main__':
-    create_plots('50', '100MB', '256', 'no_pipeline', 1)
+    create_plots('100', '100MB', '256', 'no_pipeline', 1)
     # create_plots('10', '100MB', '256', 'pipeline')
