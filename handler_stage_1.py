@@ -381,7 +381,7 @@ class SortingHandlerStage1:
                         self.current_read < self.max_read and
                         self.buffers_filled < self.max_buffers_filled
                 ):
-                    self.no_pipelining_threads.apply(self.execute_all_methods, args=(file))
+                    self.no_pipelining_threads.map(self.execute_all_methods, file)
                     # self.no_pipelining_threads.submit(self.execute_all_methods, file)
 
         print("WRITING_RESULTS_FILE STAGE 1")
