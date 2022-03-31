@@ -52,14 +52,14 @@ def generate_ecdf(data, dir_name, file_name, xlabel, ylabel):
 
 def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
     # dir_name =f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_threads}_threads_with_rules_50MB_with_distributed_minio'
-    dir_name = 'logs_determine_bandwidth/netem_logs/8_threads_2'
+    dir_name = 'logs_determine_bandwidth/logs_threads_test'
     with open(f'{dir_name}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
         experiments_data = json.loads(results_file.read())
 
     # READ INITIAL FILES
     parsed_results_read_initial_files_tasks = parse_results(
         experiments_data,
-        'stage_1',
+        'threads_test',
         'read_initial_files_tasks',
         'started_reading_file',
         'finished_reading_file',
@@ -77,7 +77,7 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
     # SORT DETERMINE CATEGORIES
     parsed_results_sort_det_cat = parse_results(
         experiments_data,
-        'stage_1',
+        'threads_test',
         'determine_categories_tasks',
         'started_sorting_determine_categories',
         'finished_sorting_determine_categories'
@@ -92,26 +92,26 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
     )
 
     # Determine Categories
-    parsed_results_sort_det_cat = parse_results(
-        experiments_data,
-        'stage_1',
-        'determine_categories_tasks',
-        'started_determine_categories',
-        'finished_determine_categories'
-    )
-    sort_det_cat_timestamps_total = parsed_results_sort_det_cat['tasks_timestamps_total']
-    generate_ecdf(
-        sort_det_cat_timestamps_total,
-        dir_name,
-        'ecdf_determine_categories_all_experiments.png',
-        xlabel='Determine categories duration (s)',
-        ylabel='CDF'
-    )
+    # parsed_results_sort_det_cat = parse_results(
+    #     experiments_data,
+    #     'threads_test',
+    #     'determine_categories_tasks',
+    #     'started_determine_categories',
+    #     'finished_determine_categories'
+    # )
+    # sort_det_cat_timestamps_total = parsed_results_sort_det_cat['tasks_timestamps_total']
+    # generate_ecdf(
+    #     sort_det_cat_timestamps_total,
+    #     dir_name,
+    #     'ecdf_determine_categories_all_experiments.png',
+    #     xlabel='Determine categories duration (s)',
+    #     ylabel='CDF'
+    # )
 
     # Write initial files
     parsed_results_write_first_file_tasks = parse_results(
         experiments_data,
-        'stage_1',
+        'threads_test',
         'write_first_file_tasks',
         'started_writing_file',
         'finished_writing_file'
@@ -209,5 +209,5 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
 
 
 if __name__ == '__main__':
-    create_plots('100', '100MB', '256', 'no_pipeline', 1)
+    create_plots('50', '100MB', '256', 'no_pipeline', 4)
     # create_plots('10', '100MB', '256', 'pipeline')

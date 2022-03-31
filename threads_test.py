@@ -9,7 +9,8 @@ import uuid
 from minio import Minio
 from custom_logger import get_logger
 
-minio_ip = "10.149.0.31"
+# minio_ip = "10.149.0.31"
+minio_ip = '127.0.0.1'
 minio_client = Minio(
         f"{minio_ip}:9000",
         access_key="minioadmin",
@@ -87,12 +88,13 @@ def download_and_upload(filename):
 
 
 if __name__ == '__main__':
-    minio_ip = sys.argv[1]
+    # minio_ip = sys.argv[1]
     # start 4 worker processes
 
     with Pool(processes=4) as pool:
-        pool.map(download_and_upload, range(50))
-
+        pool.map_async(download_and_upload, range(50))
+        pool.close()
+        pool.join()
         # for i in range(50):
         #     pool.map(download_and_upload, (i,))
         # pool.join()

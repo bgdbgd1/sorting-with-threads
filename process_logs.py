@@ -6,7 +6,8 @@ from slugify import slugify
 stages = [
     'main_handler',
     'stage_1',
-    'stage_2'
+    'stage_2',
+    'threads_test'
 ]
 
 phrases_main_handler = [
@@ -16,10 +17,10 @@ phrases_main_handler = [
     'Finish stage 2.',
 ]
 
-phrases_stage_1 = {
+phrases_stage_1 = threads_test = {
     'read_initial_files_tasks': [
-        'Started reading file.',
-        'Finished reading file.'
+        'Started reading file',
+        'Finished reading file'
     ],
     'determine_categories_tasks': [
         'Started sorting determine categories',
@@ -163,7 +164,7 @@ def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, t
 def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
     # log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_eth4/*.log')
     # log_files = glob.glob(f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/*.log')
-    log_files = glob.glob(f'logs_determine_bandwidth/netem_logs/8_threads_2/*.log')
+    log_files = glob.glob(f'logs_determine_bandwidth/logs_threads_test/*.log')
 
     for experiment_log_file in log_files:
         stage_name = [stage for stage in stages if stage in experiment_log_file][0]
@@ -177,13 +178,16 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
                     for phrase in phrase_tasks:
                         if phrase in line:
                             format_line(stage_name, phrase, line, task_name)
-
+                for task_name, phrase_tasks in threads_test.items():
+                    for phrase in phrase_tasks:
+                        if phrase in line:
+                            format_line(stage_name, phrase, line, task_name)
                 for task_name, phrase_tasks in phrases_stage_2.items():
                     for phrase in phrase_tasks:
                         if phrase in line:
                             format_line(stage_name, phrase, line, task_name)
     # file_path = f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
-    file_path = f'logs_determine_bandwidth/netem_logs/8_threads_2/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
+    file_path = f'logs_determine_bandwidth/logs_threads_test/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
 
     with open(file_path, 'w+') as results_file:
         json.dump(formatted_data, results_file)
@@ -191,4 +195,4 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
 
 if __name__ == '__main__':
     # process_logs('1000', '100MB', '256', pipeline='pipeline')
-    process_logs('100', '100MB', '256', pipeline='no_pipeline', nr_parallel_threads=8)
+    process_logs('50', '100MB', '256', pipeline='no_pipeline', nr_parallel_threads=4)
