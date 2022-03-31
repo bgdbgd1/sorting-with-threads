@@ -374,14 +374,16 @@ class SortingHandlerStage1:
 
     def execute_stage1_without_pipelining(self):
         while self.written_files < len(self.initial_files):
-            # for file in self.initial_files:
-            #     file_data = self.files_read.get(file)
-            #     if (
-            #             not file_data and
-            #             self.current_read < self.max_read and
-            #             self.buffers_filled < self.max_buffers_filled
-            #     ):
-                self.no_pipelining_threads.apply(self.execute_all_methods, self.initial_files)
+            for file in self.initial_files:
+                file_data = self.files_read.get(file)
+                if (
+                        not file_data and
+                        self.current_read < self.max_read and
+                        self.buffers_filled < self.max_buffers_filled
+                ):
+                    p = mp.Process(target=self.execute_all_methods, args=(file))
+                    p.start()
+                    # self.no_pipelining_threads.apply(self.execute_all_methods, self.initial_files)
                     # self.no_pipelining_threads.submit(self.execute_all_methods, file)
 
         print("WRITING_RESULTS_FILE STAGE 1")
