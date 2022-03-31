@@ -9,7 +9,7 @@ import uuid
 from minio import Minio
 from custom_logger import get_logger
 
-minio_ip = "127.0.0.1"
+minio_ip = "10.149.0.31"
 minio_client = Minio(
         f"{minio_ip}:9000",
         access_key="minioadmin",
