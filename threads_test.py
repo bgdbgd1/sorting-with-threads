@@ -91,8 +91,10 @@ if __name__ == '__main__':
     # start 4 worker processes
 
     with Pool(processes=4) as pool:
-        for i in range(50):
-            pool.map(download_and_upload, (i,))
+        pool.map(download_and_upload, range(50))
+
+        # for i in range(50):
+        #     pool.map(download_and_upload, (i,))
         # pool.join()
             # p = Process(target=download_and_upload, args=(i,))
             # p.start()
