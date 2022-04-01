@@ -44,5 +44,5 @@ def generate_data(files_dir, nr_files, num_records):
 
 
 if __name__ == '__main__':
-    # generate_data('/local/bee700/minio_storage/read', 100, 1000000)
-    generate_data_with_minio('/local/bee700/gen_data', 100, 1000000, '127.0.0.1', 'read')
+    generate_data('/local/bee700/minio_storage/read', 100, 10000000)
+    # generate_data_with_minio('/local/bee700/minio_storage/read', 100, 10000000, '127.0.0.1', 'read')
