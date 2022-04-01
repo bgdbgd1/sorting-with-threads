@@ -90,7 +90,7 @@ def download_and_upload(filename):
 if __name__ == '__main__':
     # minio_ip = sys.argv[1]
     # start 4 worker processes
-    pool = Pool(processes=16)
+    pool = Pool(processes=8)
     for i in range(100):
         pool.apply_async(download_and_upload, args=(i,))
     pool.close()
