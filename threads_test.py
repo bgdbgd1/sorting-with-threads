@@ -91,7 +91,8 @@ if __name__ == '__main__':
     # minio_ip = sys.argv[1]
     # start 4 worker processes
     pool = Pool(processes=8)
-    pool.apply_async(download_and_upload, range(100))
+    for i in range(100):
+        pool.apply_async(download_and_upload, args=(i,))
     pool.close()
     pool.join()
     # with Pool(processes=8) as pool:
