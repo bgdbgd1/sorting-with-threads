@@ -22,8 +22,8 @@ lock_logger = Lock()
 logger = get_logger(
     'threads_test',
     'threads_test',
-    '50',
-    '100MB',
+    '100',
+    '1GB',
     '256',
     server_number=1
 )
