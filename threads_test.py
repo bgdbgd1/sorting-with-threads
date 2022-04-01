@@ -90,22 +90,12 @@ def download_and_upload(filename):
 if __name__ == '__main__':
     # minio_ip = sys.argv[1]
     # start 4 worker processes
+    pool = Pool(processes=8)
+    pool.apply_async(download_and_upload, range(100))
+    pool.close()
+    pool.join()
+    # with Pool(processes=8) as pool:
+    #     pool.map_async(download_and_upload, range(100))
+    #     pool.close()
+    #     pool.join()
 
-    with Pool(processes=8) as pool:
-        pool.map_async(download_and_upload, range(100))
-        pool.close()
-        pool.join()
-        # for i in range(50):
-        #     pool.map(download_and_upload, (i,))
-        # pool.join()
-            # p = Process(target=download_and_upload, args=(i,))
-            # p.start()
-            # file_content = minio_client.get_object('read', str(i)).data
-            # buf = io.BytesIO()
-            # buf.write(file_content)
-
-
-
-        # for i in range(10):
-        #     p = Process(target=f, args=(i,))
-        #     p.start()
