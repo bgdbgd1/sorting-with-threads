@@ -12,7 +12,7 @@
 #
 interface=eth4
 interface_speed=100gbit
-ip=10.149.0.31 # The IP address bound to the interface
+ip=10.149.0.32 # The IP address bound to the interface
 
 # Define the upload and download speed limit, follow units can be
 # passed as a parameter:
