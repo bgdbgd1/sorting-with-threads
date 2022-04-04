@@ -63,14 +63,14 @@ def download_and_upload(filename):
     buf.write(file_content)
     np_buffer = np.frombuffer(buf.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
 
-    write_log_message(
-        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {filename + 1}.')
-    file_content_2 = minio_client.get_object('read', str(filename + 1)).data
-    write_log_message(
-        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {filename + 1}.')
-    buf_2 = io.BytesIO()
-    buf_2.write(file_content_2)
-    np_buffer_2 = np.frombuffer(buf_2.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
+    # write_log_message(
+    #     f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {filename + 1}.')
+    # file_content_2 = minio_client.get_object('read', str(filename + 1)).data
+    # write_log_message(
+    #     f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {filename + 1}.')
+    # buf_2 = io.BytesIO()
+    # buf_2.write(file_content_2)
+    # np_buffer_2 = np.frombuffer(buf_2.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
     ################### SORT DETERMINE CATEGORIES ###################
 
     write_log_message(
@@ -81,13 +81,13 @@ def download_and_upload(filename):
     write_log_message(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories file {filename}.')
 
-    write_log_message(
-        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories file {filename + 1}.')
-
-    record_arr_2 = np.sort(np_buffer_2, order='key')
-
-    write_log_message(
-        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories file {filename + 1}.')
+    # write_log_message(
+    #     f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories file {filename + 1}.')
+    #
+    # record_arr_2 = np.sort(np_buffer_2, order='key')
+    #
+    # write_log_message(
+    #     f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories file {filename + 1}.')
     ##################### WRITING FILE #####################
 
     write_log_message(
@@ -101,23 +101,23 @@ def download_and_upload(filename):
     write_log_message(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {filename}.')
 
-    write_log_message(
-        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {filename + 1}.')
-    minio_client.put_object(
-        'intermediate',
-        str(filename + 1),
-        io.BytesIO(record_arr_2.tobytes()),
-        length=record_arr_2.size * 100
-    )
-    write_log_message(
-        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {filename + 1}.')
+    # write_log_message(
+    #     f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {filename + 1}.')
+    # minio_client.put_object(
+    #     'intermediate',
+    #     str(filename + 1),
+    #     io.BytesIO(record_arr_2.tobytes()),
+    #     length=record_arr_2.size * 100
+    # )
+    # write_log_message(
+    #     f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {filename + 1}.')
 
 
 if __name__ == '__main__':
     # minio_ip = sys.argv[1]
     # start 4 worker processes
-    pool = Pool(processes=8)
-    for i in range(0, 100, 2):
+    pool = Pool(processes=6)
+    for i in range(0, 100):
         pool.apply_async(download_and_upload, args=(i,))
     pool.close()
     pool.join()
