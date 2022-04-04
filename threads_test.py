@@ -23,7 +23,7 @@ logger = get_logger(
     'threads_test',
     'threads_test',
     '100',
-    '1GB',
+    '100MB',
     '256',
     server_number=1
 )

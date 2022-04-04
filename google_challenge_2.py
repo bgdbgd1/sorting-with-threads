@@ -81,4 +81,4 @@ def solution(l):
 
 # Driver Function
 if __name__ == "__main__":
-    print(solution([2, 3, 9, 4, 6, 8]))
+    print(solution([1,4,4,4,1,4]))
