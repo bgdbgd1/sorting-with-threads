@@ -11,12 +11,12 @@ from custom_logger import get_logger
 
 minio_ip = "10.149.0.32"
 # minio_ip = '127.0.0.1'
-minio_client = Minio(
-        f"{minio_ip}:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        secure=False
-    )
+# minio_client = Minio(
+#         f"{minio_ip}:9000",
+#         access_key="minioadmin",
+#         secret_key="minioadmin",
+#         secure=False
+#     )
 
 lock_logger = Lock()
 logger = get_logger(
@@ -43,6 +43,12 @@ def write_log_message(message):
 
 
 def download_file(filename):
+    minio_client = Minio(
+        f"{minio_ip}:9000",
+        access_key="minioadmin",
+        secret_key="minioadmin",
+        secure=False
+    )
     file_content = minio_client.get_object('read', str(filename)).data
     buf = io.BytesIO()
     buf.write(file_content)
@@ -51,6 +57,12 @@ def download_file(filename):
 def download_and_upload(filename):
     process_uuid = uuid.uuid4()
     experiment_number = 1
+    minio_client = Minio(
+        f"{minio_ip}:9000",
+        access_key="minioadmin",
+        secret_key="minioadmin",
+        secure=False
+    )
 
     ################### READ INITIAL FILE ###################
 
