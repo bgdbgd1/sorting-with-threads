@@ -25,7 +25,7 @@ logger = get_logger(
     '50',
     '100MB',
     '256',
-    server_number=1
+    server_number=2
 )
 
 # def f(x):
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # minio_ip = sys.argv[1]
     # start 4 worker processes
     pool = Pool(processes=1)
-    for i in range(50, 100):
+    for i in range(0, 50):
         pool.apply_async(download_and_upload, args=(i,))
     pool.close()
     pool.join()
