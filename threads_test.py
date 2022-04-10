@@ -1,8 +1,5 @@
 import io
-import sys
-from multiprocessing import Pool, TimeoutError, Process
-import time
-import os
+from multiprocessing import Pool
 from threading import Lock
 import numpy as np
 import uuid
@@ -27,9 +24,6 @@ logger = get_logger(
     '256',
     server_number=1
 )
-
-# def f(x):
-#     print(x*x)
 
 
 def collect_result(result):

@@ -1,3 +1,6 @@
+# Return the number formed from [index, index + 5] of the digits of the number formed by all the concatenated prime numbers < 10 000.
+# Example: 23571113171923....  solution(3) = 71113; solution(5) = 11317
+
 def is_prime_number(num):
     # If given number is greater than 1
         # Iterate from 2 to n / 2
@@ -21,5 +24,5 @@ def solution(index):
 
 
 if __name__ == '__main__':
-    sol = solution(3)
+    sol = solution(5)
     print(sol)

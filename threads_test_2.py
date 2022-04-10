@@ -28,9 +28,6 @@ logger = get_logger(
     server_number=2
 )
 
-# def f(x):
-#     print(x*x)
-
 
 def collect_result(result):
     global results

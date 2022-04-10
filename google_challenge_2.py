@@ -1,3 +1,8 @@
+# Find the highest number that is divisible with 3 having as input a list of digits. A digit can appear multiple times in the input list but each digit from the input list can be used only once. If no number is found, return 0.
+# Example: [1,4,4] => 441; [4,1,4] => 441; [1,2,3,4] => 321 [4,4] => 0
+
+
+
 from itertools import combinations
 import numpy
 
