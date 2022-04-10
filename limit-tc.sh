@@ -12,7 +12,7 @@
 #
 interface=eth4
 interface_speed=100gbit
-ip=10.149.0.1 # The IP address bound to the interface
+ip=10.149.0.33 # The IP address bound to the interface
 
 # Define the upload and download speed limit, follow units can be
 # passed as a parameter:
@@ -44,8 +44,8 @@ function start_tc {
     sudo /cm/shared/package/utils/bin/run-tc class add dev $interface parent 1:1 classid 1:10 htb rate $download_limit burst 15k
     sudo /cm/shared/package/utils/bin/run-tc class add dev $interface parent 1:1 classid 1:20 htb rate $upload_limit burst 15k
 
-    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface parent 1:10 handle 10: sfq perturb 10
-    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface parent 1:20 handle 20: sfq perturb 10
+#    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface parent 1:10 handle 10: sfq perturb 10
+#    sudo /cm/shared/package/utils/bin/run-tc qdisc add dev $interface parent 1:20 handle 20: sfq perturb 10
 
     # Apply the filter rules
 

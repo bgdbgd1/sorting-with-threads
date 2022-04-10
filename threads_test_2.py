@@ -9,23 +9,23 @@ import uuid
 from minio import Minio
 from custom_logger import get_logger
 
-minio_ip = "10.149.0.31"
+minio_ip = "10.149.0.32"
 # minio_ip = '127.0.0.1'
-# minio_client = Minio(
-#         f"{minio_ip}:9000",
-#         access_key="minioadmin",
-#         secret_key="minioadmin",
-#         secure=False
-#     )
+minio_client = Minio(
+        f"{minio_ip}:9000",
+        access_key="minioadmin",
+        secret_key="minioadmin",
+        secure=False
+    )
 
 lock_logger = Lock()
 logger = get_logger(
     'threads_test',
     'threads_test',
-    '100',
+    '50',
     '100MB',
     '256',
-    server_number=1
+    server_number=2
 )
 
 # def f(x):
@@ -43,12 +43,6 @@ def write_log_message(message):
 
 
 def download_file(filename):
-    minio_client = Minio(
-        f"{minio_ip}:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        secure=False
-    )
     file_content = minio_client.get_object('read', str(filename)).data
     buf = io.BytesIO()
     buf.write(file_content)
@@ -57,12 +51,6 @@ def download_file(filename):
 def download_and_upload(filename):
     process_uuid = uuid.uuid4()
     experiment_number = 1
-    minio_client = Minio(
-        f"{minio_ip}:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        secure=False
-    )
 
     ################### READ INITIAL FILE ###################
 
@@ -128,8 +116,8 @@ def download_and_upload(filename):
 if __name__ == '__main__':
     # minio_ip = sys.argv[1]
     # start 4 worker processes
-    pool = Pool(processes=4)
-    for i in range(0, 100):
+    pool = Pool(processes=1)
+    for i in range(0, 50):
         pool.apply_async(download_and_upload, args=(i,))
     pool.close()
     pool.join()

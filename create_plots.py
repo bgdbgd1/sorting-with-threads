@@ -10,6 +10,7 @@ def parse_results(experiments_data, stage_name, task_name, start_attribute, fini
     tasks_timestamps_per_experiment = {}
     tasks_timestamps_total = []
     for experiment_number, experiment_data in experiments_data.items():
+        exp_data = experiment_data[stage_name][task_name]
         for task, task_data in experiment_data[stage_name][task_name].items():
             try:
                 finish = datetime.strptime(task_data[finish_attribute], '%Y-%m-%d %H:%M:%S,%f')
@@ -20,19 +21,29 @@ def parse_results(experiments_data, stage_name, task_name, start_attribute, fini
                 if tasks_timestamps_per_experiment.get(experiment_number) is None:
                     tasks_timestamps_per_experiment.update(
                         {
-                            experiment_number: [task_completion_time_in_seconds]
+                            experiment_number: [
+                                {
+                                    'completion_time': task_completion_time_in_seconds,
+                                    'start_time': start,
+                                    'finish_time': finish
+                                }
+                            ]
                         }
                     )
                 else:
                     tasks_timestamps_per_experiment[experiment_number].append(
-                        task_completion_time_in_seconds
+                        {
+                            'completion_time': task_completion_time_in_seconds,
+                            'start_time': start,
+                            'finish_time': finish
+                        }
                     )
             except:
                 pass
 
     return {
         'tasks_timestamps_per_experiment': tasks_timestamps_per_experiment,
-        'tasks_timestamps_total': sorted(tasks_timestamps_total)
+        'tasks_timestamps_total': tasks_timestamps_total
     }
 
 
@@ -52,7 +63,7 @@ def generate_ecdf(data, dir_name, file_name, xlabel, ylabel):
 
 def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
     # dir_name =f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_threads}_threads_with_rules_50MB_with_distributed_minio'
-    dir_name = 'logs_determine_bandwidth/logs_threads_test/8_threads_1GB'
+    dir_name = 'logs_determine_bandwidth/another_day/4_threads'
     with open(f'{dir_name}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json', 'r') as results_file:
         experiments_data = json.loads(results_file.read())
 
@@ -209,5 +220,5 @@ def create_plots(nr_files, file_size, intervals, pipeline, nr_threads):
 
 
 if __name__ == '__main__':
-    create_plots('50', '100MB', '256', 'no_pipeline', 4)
+    create_plots('100', '100MB', '256', 'no_pipeline', 6)
     # create_plots('10', '100MB', '256', 'pipeline')
