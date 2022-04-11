@@ -164,7 +164,7 @@ def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, t
 def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
     # log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_eth4/*.log')
     # log_files = glob.glob(f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/*.log')
-    log_files = glob.glob(f'logs_determine_bandwidth/another_day/4_threads_individual_minio_clients/*.log')
+    log_files = glob.glob(f'logs_determine_bandwidth/new_logs/*.log')
 
     for experiment_log_file in log_files:
         stage_name = [stage for stage in stages if stage in experiment_log_file][0]
@@ -187,7 +187,7 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
                         if phrase in line:
                             format_line(stage_name, phrase, line, task_name)
     # file_path = f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
-    file_path = f'logs_determine_bandwidth/another_day/4_threads_individual_minio_clients/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
+    file_path = f'logs_determine_bandwidth/new_logs/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
 
     with open(file_path, 'w+') as results_file:
         json.dump(formatted_data, results_file)
