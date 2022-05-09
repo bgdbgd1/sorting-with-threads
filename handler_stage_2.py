@@ -14,7 +14,7 @@ from custom_logger import get_logger
 
 
 class SortingHandlerStage2:
-    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, server_number, read_dir=None, write_dir=None, reading_threads=1, sort_threads=1, writing_threads=1, **kwargs):
+    def __init__(self, read_bucket, intermediate_bucket, write_bucket, status_bucket, partitions, experiment_number, config, minio_ip, server_number, read_dir=None, write_dir=None, reading_threads=1, sort_threads=1, writing_threads=1, no_pipeline_threads=None, **kwargs):
         self.files_in_read = {}
         self.files_read = {}
 
@@ -37,7 +37,7 @@ class SortingHandlerStage2:
         self.sort_threads = ThreadPoolExecutor(max_workers=sort_threads)
         self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
         # self.no_pipelining_threads = ThreadPoolExecutor(max_workers=24)
-        self.no_pipelining_threads = mp.Pool(24)
+        self.no_pipelining_threads = mp.Pool(no_pipeline_threads)
 
         self.lock_current_read = Lock()
         self.lock_current_sort = Lock()
@@ -339,10 +339,23 @@ class SortingHandlerStage2:
         for partition_name, partition_data in self.partitions.items():
             # self.execute_all_methods(partition_name, partition_data)
             # self.no_pipelining_threads.submit(
-            self.no_pipelining_threads.apply(
+            self.no_pipelining_threads.apply_async(
                 self.execute_all_methods,
                 args=(partition_name, partition_data)
             )
+            self.no_pipelining_threads.close()
+            self.no_pipelining_threads.join()
+
+            # p = mp.Process(
+            #     target=self.execute_all_methods,
+            #     args=(partition_name, partition_data)
+            # )
+            # p.start()
+
+            # self.no_pipelining_threads.apply(
+            #     self.execute_all_methods,
+            #     args=(partition_name, partition_data)
+            # )
 
         self.write_log_message("========FINISH STAGE 2===========")
         print("========FINISH STAGE 2===========")
@@ -352,6 +365,7 @@ class SortingHandlerStage2:
             io.BytesIO(b'done'), length=4)
         self.logger.handlers.pop()
         self.logger.handlers.pop()
+
 
 class FileStatusStage2(Enum):
     NOT_READ = 'NOT_READ'

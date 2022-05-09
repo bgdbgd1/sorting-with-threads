@@ -5,6 +5,7 @@ from flask import Flask, request
 
 from handler_stage_1 import SortingHandlerStage1
 from handler_stage_2 import SortingHandlerStage2
+import multiprocessing as mp
 
 import sys
 
@@ -65,7 +66,9 @@ def sorting_stage1():
         server_number=SERVER_NUMBER
     )
     # handler.execute_stage1()
-    Thread(target=handler.execute_stage1).start()
+    # Thread(target=handler.execute_stage1).start()
+    p = mp.Process(target=handler.execute_stage1)
+    p.start()
     return "Processing"
 
 
@@ -112,7 +115,9 @@ def sorting_stage2():
         writing_threads=writing_threads,
         server_number=SERVER_NUMBER
     )
-    Thread(target=handler.execute_stage2).start()
+    # Thread(target=handler.execute_stage2).start()
+    p = mp.Process(target=handler.execute_stage2)
+    p.start()
     # handler.execute_stage2()
     return "Sorting"
 
@@ -151,7 +156,9 @@ def sorting_stage1_no_pipeline():
         no_pipeline_threads=no_pipeline_threads
     )
     # handler.execute_stage1()
-    Thread(target=handler.execute_stage1_without_pipelining).start()
+    p = mp.Process(target=handler.execute_stage1_without_pipelining)
+    p.start()
+    # Thread(target=handler.execute_stage1_without_pipelining).start()
     return "Processing"
 
 
@@ -161,6 +168,8 @@ def sorting_stage2_no_pipeline():
     partitions = request_data.get('partitions')
     experiment_number = request_data.get('experiment_number')
     config = request_data.get('config')
+    no_pipeline_threads = request_data.get('no_pipeline_threads')
+
     if partitions is None:
         return "'partitions' attribute not found", 400
     if experiment_number is None:
@@ -184,9 +193,12 @@ def sorting_stage2_no_pipeline():
         experiment_number=experiment_number,
         config=config,
         minio_ip=minio_ip,
-        server_number=SERVER_NUMBER
+        server_number=SERVER_NUMBER,
+        no_pipeline_threads=no_pipeline_threads
     )
-    Thread(target=handler.execute_stage2_without_pipelining).start()
+    p = mp.Process(target=handler.execute_stage2_without_pipelining)
+    p.start()
+    # Thread(target=handler.execute_stage2_without_pipelining).start()
     return "Sorting"
 
 

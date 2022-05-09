@@ -33,13 +33,15 @@ class SortingHandlerStage1:
         self.buffers_filled = 0
         self.max_buffers_filled = 100
 
-        self.reading_threads = ThreadPoolExecutor(max_workers=reading_threads)
-        self.determine_categories_threads = ThreadPoolExecutor(max_workers=det_cat_threads)
-        self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
+        # self.reading_threads = ThreadPoolExecutor(max_workers=reading_threads)
+        self.reading_threads = mp.Pool(reading_threads)
+        # self.determine_categories_threads = ThreadPoolExecutor(max_workers=det_cat_threads)
+        self.determine_categories_threads = mp.Pool(det_cat_threads)
+        # self.writing_threads = ThreadPoolExecutor(max_workers=writing_threads)
+        self.writing_threads = mp.Pool(writing_threads)
 
-        # self.no_pipelining_threads = ThreadPoolExecutor(max_workers=no_pipeline_threads)
-        # self.no_pipelining_threads = mp.Pool(mp.cpu_count())
         self.no_pipelining_threads = mp.Pool(no_pipeline_threads)
+
         self.lock_current_read = Lock()
         self.lock_current_determine_categories = Lock()
         self.lock_current_write = Lock()
@@ -343,21 +345,33 @@ class SortingHandlerStage1:
                         self.buffers_filled < self.max_buffers_filled
                 ):
                     # self.read_file(file)
-                    self.reading_threads.submit(self.read_file, file)
+                    self.reading_threads.apply_async(self.read_file, args=(file))
+                    # self.reading_threads.close()
+                    # self.reading_threads.join()
+                    # self.reading_threads.submit(self.read_file, file)
                 elif (
                         file_data and
                         file_data['status'] == FileStatusStage1.READ and
                         self.current_determine_categories < self.max_determine_categories
                 ):
                     # self.determine_categories(file)
-                    self.determine_categories_threads.submit(self.determine_categories, file)
+                    self.determine_categories_threads.apply_async(
+                        self.determine_categories,
+                        args=(file)
+                    )
+                    # self.determine_categories_threads()
+                    # self.determine_categories_threads.close()
+                    # self.determine_categories_threads.join()
+                    # self.determine_categories_threads.submit(self.determine_categories, file)
                 elif (
                         file_data and
                         file_data['status'] == FileStatusStage1.DETERMINED_CATEGORIES and
                         self.current_write < self.max_write
                 ):
                     # self.write_file(file)
-                    self.writing_threads.submit(self.write_file, file)
+                    self.writing_threads.apply_async(self.write_file, file)
+                    # self.writing_threads.join()
+                    # self.writing_threads.submit(self.write_file, file)
 
         print("WRITING_RESULTS_FILE STAGE 1")
         utfcontent = json.dumps(self.locations).encode('utf-8')
@@ -381,8 +395,13 @@ class SortingHandlerStage1:
                         self.current_read < self.max_read and
                         self.buffers_filled < self.max_buffers_filled
                 ):
-                    p = mp.Process(target=self.execute_all_methods, args=(file))
-                    p.start()
+                    self.no_pipelining_threads.apply_async(self.execute_all_methods, args=(file))
+                    self.no_pipelining_threads.close()
+                    self.no_pipelining_threads.join()
+
+                    # p = mp.Process(target=self.execute_all_methods, args=(file))
+                    # p.start()
+
                     # self.no_pipelining_threads.apply(self.execute_all_methods, self.initial_files)
                     # self.no_pipelining_threads.submit(self.execute_all_methods, file)
 
