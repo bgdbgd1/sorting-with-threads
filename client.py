@@ -105,21 +105,21 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                 experiment_number
             )
         )
-        requests.post(
-            f'{ip}/sorting/pipeline/stage1',
-            json={
-                "file_names": data,
-                "config": {
-                    "file_size": file_size,
-                    'nr_files': nr_files,
-                    'intervals': intervals,
-                },
-                "experiment_number": experiment_number,
-                "reading_threads": READING_THREADS_STAGE_1,
-                "det_cat_threads": DET_CAT_THREADS_STAGE_1,
-                "writing_threads": WRITING_THREADS_STAGE_1
-            }
-        )
+        # requests.post(
+        #     f'{ip}/sorting/pipeline/stage1',
+        #     json={
+        #         "file_names": data,
+        #         "config": {
+        #             "file_size": file_size,
+        #             'nr_files': nr_files,
+        #             'intervals': intervals,
+        #         },
+        #         "experiment_number": experiment_number,
+        #         "reading_threads": READING_THREADS_STAGE_1,
+        #         "det_cat_threads": DET_CAT_THREADS_STAGE_1,
+        #         "writing_threads": WRITING_THREADS_STAGE_1
+        #     }
+        # )
     pool_requests.close()
     pool_requests.join()
     # Check if all servers finished STAGE 1
@@ -138,7 +138,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
             sleep(3)
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
-    return
+    # return
     data_from_stage_1 = {}
     data_for_stage_2 = {}
 
