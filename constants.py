@@ -1,0 +1,5 @@
+SERVER_NUMBER = '1'
+FILE_NR = '10'
+FILE_SIZE = '10MB'
+CATEGORIES = '256'
+WITH_PIPELINE = 'with_pipeline'

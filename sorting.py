@@ -1,17 +1,21 @@
 import json
+from multiprocessing import Process
 from threading import Thread
 
+import custom_logger
 from flask import Flask, request
 
 from handler_stage_1 import SortingHandlerStage1
 from handler_stage_2 import SortingHandlerStage2
 import multiprocessing as mp
-
-import sys
-
+from stage_1_no_pipeline import execute_stage_1_no_pipeline
+from stage_2_no_pipeline import execute_stage_2_no_pipeline
+from stage_1_pipeline import execute_stage_1_pipeline
+from stage_2_pipeline import execute_stage_2_pipeline
+from constants import SERVER_NUMBER, FILE_SIZE, FILE_NR, CATEGORIES
 app = Flask(__name__)
 minio_ip = ''
-SERVER_NUMBER = None
+
 
 @app.route('/')
 def hello_world():
@@ -21,8 +25,6 @@ def hello_world():
 @app.route("/sorting/pipeline/stage1", methods=['POST'])
 def sorting_stage1():
     request_data = json.loads(request.data)
-    # read_dir = request_data.get('read_dir')
-    # write_dir = request_data.get('write_dir')
     file_names = request_data.get('file_names')
     experiment_number = request_data.get('experiment_number')
     config = request_data.get('config')
@@ -30,10 +32,6 @@ def sorting_stage1():
     det_cat_threads = request_data.get('det_cat_threads')
     writing_threads = request_data.get('writing_threads')
 
-    # if read_dir is None:
-    #     return "'read_dir' attribute not found", 400
-    # if write_dir is None:
-    #     return "'write_dir' attribute not found", 400
     if file_names is None:
         return "'file_names' attribute not found", 400
     if experiment_number is None:
@@ -54,21 +52,92 @@ def sorting_stage1():
         if config.get('intervals') is None:
             return "'intervals' attribute not found for config", 400
 
-    handler = SortingHandlerStage1(
-        read_bucket='read',
-        write_bucket='final',
-        intermediate_bucket='intermediate',
-        status_bucket='status',
-        initial_files=file_names,
-        experiment_number=experiment_number,
-        config=config,
-        minio_ip=minio_ip,
-        server_number=SERVER_NUMBER
-    )
+    # handler = SortingHandlerStage1(
+    #     read_bucket='read',
+    #     write_bucket='final',
+    #     intermediate_bucket='intermediate',
+    #     status_bucket='status',
+    #     initial_files=file_names,
+    #     experiment_number=experiment_number,
+    #     config=config,
+    #     minio_ip=minio_ip,
+    #     server_number=SERVER_NUMBER
+    # )
     # handler.execute_stage1()
-    # Thread(target=handler.execute_stage1).start()
-    p = mp.Process(target=handler.execute_stage1)
-    p.start()
+    # Thread(
+    #     target=execute_stage_1_pipeline,
+    #     args=(
+    #         file_names,
+    #         minio_ip,
+    #         'read',
+    #         'intermediate',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         reading_threads,
+    #         det_cat_threads,
+    #         writing_threads,
+    #     )
+    # ).start()
+    # proc = Process(
+    #     target=execute_stage_1_pipeline,
+    #     args=(
+    #         file_names,
+    #         minio_ip,
+    #         'read',
+    #         'intermediate',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         reading_threads,
+    #         det_cat_threads,
+    #         writing_threads,
+    #     )
+    # )
+    # proc.start()
+    # proc.join()
+    execute_stage_1_pipeline(
+        file_names,
+        minio_ip,
+        'read',
+        'intermediate',
+        'status',
+        config['nr_files'],
+        config['file_size'],
+        config['intervals'],
+        SERVER_NUMBER,
+        experiment_number,
+        reading_threads,
+        det_cat_threads,
+        writing_threads,
+    )
+    # p = mp.Process(
+    #     target=execute_stage_1_pipeline,
+    #     args=(
+    #         file_names,
+    #         minio_ip,
+    #         'read',
+    #         'intermediate',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         reading_threads,
+    #         det_cat_threads,
+    #         writing_threads,
+    #     )
+    # )
+    # p.start()
+    # p = mp.Process(target=handler.execute_stage1)
+    # p.start()
     return "Processing"
 
 
@@ -100,24 +169,74 @@ def sorting_stage2():
             return "'nr_files' attribute not found for config", 400
         if config.get('intervals') is None:
             return "'intervals' attribute not found for config", 400
-
-    handler = SortingHandlerStage2(
-        read_bucket='read',
-        write_bucket='final',
-        intermediate_bucket='intermediate',
-        status_bucket='status',
-        partitions=partitions,
-        experiment_number=experiment_number,
-        config=config,
-        minio_ip=minio_ip,
-        reading_threads=reading_threads,
-        sort_threads=sort_threads,
-        writing_threads=writing_threads,
-        server_number=SERVER_NUMBER
+    # Thread(
+    #     target=execute_stage_2_pipeline,
+    #     args=(
+    #         partitions,
+    #         minio_ip,
+    #         'intermediate',
+    #         'final',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         reading_threads,
+    #         sort_threads,
+    #         writing_threads)
+    # ).start()
+    # proc = Process(
+    #     target=execute_stage_2_pipeline,
+    #     args=(
+    #         partitions,
+    #         minio_ip,
+    #         'intermediate',
+    #         'final',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         reading_threads,
+    #         sort_threads,
+    #         writing_threads
+    #     ))
+    # proc.start()
+    # proc.join()
+    execute_stage_2_pipeline(
+        partitions,
+        minio_ip,
+        'intermediate',
+        'final',
+        'status',
+        config['nr_files'],
+        config['file_size'],
+        config['intervals'],
+        SERVER_NUMBER,
+        experiment_number,
+        reading_threads,
+        sort_threads,
+        writing_threads
     )
+    # handler = SortingHandlerStage2(
+    #     read_bucket='read',
+    #     write_bucket='final',
+    #     intermediate_bucket='intermediate',
+    #     status_bucket='status',
+    #     partitions=partitions,
+    #     experiment_number=experiment_number,
+    #     config=config,
+    #     minio_ip=minio_ip,
+    #     reading_threads=reading_threads,
+    #     sort_threads=sort_threads,
+    #     writing_threads=writing_threads,
+    #     server_number=SERVER_NUMBER
+    # )
     # Thread(target=handler.execute_stage2).start()
-    p = mp.Process(target=handler.execute_stage2)
-    p.start()
+    # p = mp.Process(target=handler.execute_stage2)
+    # p.start()
     # handler.execute_stage2()
     return "Sorting"
 
@@ -142,23 +261,23 @@ def sorting_stage1_no_pipeline():
             return "'nr_files' attribute not found for config", 400
         if config.get('intervals') is None:
             return "'intervals' attribute not found for config", 400
-
-    handler = SortingHandlerStage1(
-        read_bucket='read',
-        write_bucket='final',
-        intermediate_bucket='intermediate',
-        status_bucket='status',
-        initial_files=file_names,
-        experiment_number=experiment_number,
-        config=config,
-        minio_ip=minio_ip,
-        server_number=SERVER_NUMBER,
-        no_pipeline_threads=no_pipeline_threads
+    p = mp.Process(
+        target=execute_stage_1_no_pipeline,
+        args=(
+            file_names,
+            minio_ip,
+            'read',
+            'intermediate',
+            'status',
+            config['nr_files'],
+            config['file_size'],
+            config['intervals'],
+            SERVER_NUMBER,
+            experiment_number,
+            no_pipeline_threads,
+        )
     )
-    # handler.execute_stage1()
-    p = mp.Process(target=handler.execute_stage1_without_pipelining)
     p.start()
-    # Thread(target=handler.execute_stage1_without_pipelining).start()
     return "Processing"
 
 
@@ -184,36 +303,36 @@ def sorting_stage2_no_pipeline():
         if config.get('intervals') is None:
             return "'intervals' attribute not found for config", 400
 
-    handler = SortingHandlerStage2(
-        read_bucket='read',
-        write_bucket='final',
-        intermediate_bucket='intermediate',
-        status_bucket='status',
-        partitions=partitions,
-        experiment_number=experiment_number,
-        config=config,
-        minio_ip=minio_ip,
-        server_number=SERVER_NUMBER,
-        no_pipeline_threads=no_pipeline_threads
+    p = mp.Process(
+        target=execute_stage_2_no_pipeline,
+        args=(
+            partitions,
+            minio_ip,
+            'intermediate',
+            'final',
+            'status',
+            config['nr_files'],
+            config['file_size'],
+            config['intervals'],
+            SERVER_NUMBER,
+            experiment_number,
+            no_pipeline_threads,
+        )
     )
-    p = mp.Process(target=handler.execute_stage2_without_pipelining)
     p.start()
-    # Thread(target=handler.execute_stage2_without_pipelining).start()
     return "Sorting"
 
 
 if __name__ == '__main__':
     # e.g. python sorting.py 127.0.0.1 1
     port = '5000'
-
-    minio_ip = sys.argv[1]
-    SERVER_NUMBER = sys.argv[2]
+    # minio_ip = sys.argv[1]
+    # SERVER_NUMBER = sys.argv[2]
 
     # if len(sys.argv) == 4:
     #     port = sys.argv[3]
-    app.run(host=f'10.149.0.{SERVER_NUMBER}', port=int(port))
+    # app.run(host=f'10.149.0.{SERVER_NUMBER}', port=int(port))
 
     # Local settings
-    # SERVER_NUMBER = 1
-    # minio_ip = '127.0.0.1'
-    # app.run(host='0.0.0.0', port=5000)
+    minio_ip = '127.0.0.1'
+    app.run(host='0.0.0.0', port=5000)

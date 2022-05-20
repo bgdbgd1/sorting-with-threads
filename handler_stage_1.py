@@ -302,15 +302,7 @@ class SortingHandlerStage1:
         }
         with self.lock_write_locations:
             self.locations.update(locations)
-            self.locations_2[file_name].update(
-                {
-                    new_file_name: {
-                        'start_index': start_index,
-                        'end_index': nr_elements,
-                        'file_name': file_name
-                    }
-                }
-            )
+
         self.write_log_message(
             f'experiment_number:{self.experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
 
