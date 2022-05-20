@@ -262,23 +262,36 @@ def sorting_stage1_no_pipeline():
             return "'nr_files' attribute not found for config", 400
         if config.get('intervals') is None:
             return "'intervals' attribute not found for config", 400
-    p = mp.Process(
-        target=execute_stage_1_no_pipeline,
-        args=(
-            file_names,
-            minio_ip,
-            'read',
-            'intermediate',
-            'status',
-            config['nr_files'],
-            config['file_size'],
-            config['intervals'],
-            SERVER_NUMBER,
-            experiment_number,
-            no_pipeline_threads,
-        )
+    execute_stage_1_no_pipeline(
+        file_names,
+        minio_ip,
+        'read',
+        'intermediate',
+        'status',
+        config['nr_files'],
+        config['file_size'],
+        config['intervals'],
+        SERVER_NUMBER,
+        experiment_number,
+        no_pipeline_threads,
     )
-    p.start()
+    # p = mp.Process(
+    #     target=execute_stage_1_no_pipeline,
+    #     args=(
+    #         file_names,
+    #         minio_ip,
+    #         'read',
+    #         'intermediate',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         no_pipeline_threads,
+    #     )
+    # )
+    # p.start()
     return "Processing"
 
 
@@ -303,24 +316,36 @@ def sorting_stage2_no_pipeline():
             return "'nr_files' attribute not found for config", 400
         if config.get('intervals') is None:
             return "'intervals' attribute not found for config", 400
-
-    p = mp.Process(
-        target=execute_stage_2_no_pipeline,
-        args=(
-            partitions,
-            minio_ip,
-            'intermediate',
-            'final',
-            'status',
-            config['nr_files'],
-            config['file_size'],
-            config['intervals'],
-            SERVER_NUMBER,
-            experiment_number,
-            no_pipeline_threads,
-        )
+    execute_stage_2_no_pipeline(
+        partitions,
+        minio_ip,
+        'intermediate',
+        'final',
+        'status',
+        config['nr_files'],
+        config['file_size'],
+        config['intervals'],
+        SERVER_NUMBER,
+        experiment_number,
+        no_pipeline_threads,
     )
-    p.start()
+    # p = mp.Process(
+    #     target=execute_stage_2_no_pipeline,
+    #     args=(
+    #         partitions,
+    #         minio_ip,
+    #         'intermediate',
+    #         'final',
+    #         'status',
+    #         config['nr_files'],
+    #         config['file_size'],
+    #         config['intervals'],
+    #         SERVER_NUMBER,
+    #         experiment_number,
+    #         no_pipeline_threads,
+    #     )
+    # )
+    # p.start()
     return "Sorting"
 
 
