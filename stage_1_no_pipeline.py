@@ -147,12 +147,17 @@ def execute_stage_1_no_pipeline(
                         read_bucket,
                         intermediate_bucket,
                         experiment_number,
-                        files_nr,
-                        files_size,
-                        categories,
-                        server_number,
                     )
                 )
+                # execute_all_methods(
+                #     file,
+                #     files_read,
+                #     all_locations,
+                #     minio_ip,
+                #     read_bucket,
+                #     intermediate_bucket,
+                #     experiment_number,
+                # )
         pool.close()
         pool.join()
         minio_client = Minio(

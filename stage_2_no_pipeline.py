@@ -90,12 +90,16 @@ def execute_stage_2_no_pipeline(
                 intermediate_bucket,
                 final_bucket,
                 experiment_number,
-                files_nr,
-                files_size,
-                categories,
-                server_number,
             )
         )
+        # execute_all_methods(
+        #     partition_name,
+        #     partition_data,
+        #     minio_ip,
+        #     intermediate_bucket,
+        #     final_bucket,
+        #     experiment_number,
+        # )
     pool.close()
     pool.join()
     minio_client = Minio(
