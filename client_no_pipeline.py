@@ -1,5 +1,6 @@
 import json
 import sys
+from multiprocessing import Pool
 from time import sleep
 
 import requests
@@ -24,6 +25,45 @@ logger = get_logger(
     'client_handler',
     WITH_PIPELINE
 )
+NO_PIPELINE_THREADS = 24
+
+
+def call_stage_1_no_pipeline(ip, data, file_size, nr_files, intervals, experiment_number):
+    requests.post(
+        f'{ip}/sorting/no-pipeline/stage1',
+        json={
+            "file_names": data,
+            "config": {
+                "file_size": file_size,
+                'nr_files': nr_files,
+                'intervals': intervals,
+            },
+            "experiment_number": experiment_number,
+            "reading_threads": READING_THREADS_STAGE_1,
+            "det_cat_threads": DET_CAT_THREADS_STAGE_1,
+            "writing_threads": WRITING_THREADS_STAGE_1,
+            "no_pipeline_threads": NO_PIPELINE_THREADS
+        }
+    )
+
+
+def call_stage_2_no_pipeline(ip, data, file_size, nr_files, intervals, experiment_number):
+    requests.post(
+        f'{ip}/sorting/no-pipeline/stage2',
+        json={
+            'partitions': data,
+            "config": {
+                "file_size": file_size,
+                'nr_files': nr_files,
+                'intervals': intervals,
+            },
+            "experiment_number": experiment_number,
+            "reading_threads": READING_THREADS_STAGE_2,
+            "sort_threads": SORT_THREADS_STAGE_2,
+            "writing_threads": WRITING_THREADS_STAGE_2,
+            "no_pipeline_threads": 2
+        }
+    )
 
 
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, minio_ip, ips):
@@ -51,24 +91,39 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
     prefix_results_stage_1 = f'no_pipelining_results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
+    pool_requests = Pool(24)
+
     # Send data to servers
     for ip, data in files_per_ip.items():
-        requests.post(
-            f'{ip}/sorting/no-pipeline/stage1',
-            json={
-                "file_names": data,
-                "config": {
-                    "file_size": file_size,
-                    'nr_files': nr_files,
-                    'intervals': intervals,
-                },
-                "experiment_number": experiment_number,
-                "reading_threads": READING_THREADS_STAGE_1,
-                "det_cat_threads": DET_CAT_THREADS_STAGE_1,
-                "writing_threads": WRITING_THREADS_STAGE_1,
-                "no_pipeline_threads": 2
-            }
+        pool_requests.apply_async(
+            call_stage_1_no_pipeline,
+            args=(
+                ip,
+                data,
+                file_size,
+                nr_files,
+                intervals,
+                experiment_number
+            )
         )
+        # requests.post(
+        #     f'{ip}/sorting/no-pipeline/stage1',
+        #     json={
+        #         "file_names": data,
+        #         "config": {
+        #             "file_size": file_size,
+        #             'nr_files': nr_files,
+        #             'intervals': intervals,
+        #         },
+        #         "experiment_number": experiment_number,
+        #         "reading_threads": READING_THREADS_STAGE_1,
+        #         "det_cat_threads": DET_CAT_THREADS_STAGE_1,
+        #         "writing_threads": WRITING_THREADS_STAGE_1,
+        #         "no_pipeline_threads": 2
+        #     }
+        # )
+    pool_requests.close()
+    pool_requests.join()
 
     # Check if all servers finished STAGE 1
     file_found = False
@@ -122,24 +177,38 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
         data_for_stage_2_per_ip.update({ip: dict(data)})
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 2.')
-    for ip, data in data_for_stage_2_per_ip.items():
-        requests.post(
-            f'{ip}/sorting/no-pipeline/stage2',
-            json={
-                'partitions': data,
-                "config": {
-                    "file_size": file_size,
-                    'nr_files': nr_files,
-                    'intervals': intervals,
-                },
-                "experiment_number": experiment_number,
-                "reading_threads": READING_THREADS_STAGE_2,
-                "sort_threads": SORT_THREADS_STAGE_2,
-                "writing_threads": WRITING_THREADS_STAGE_2,
-                "no_pipeline_threads": 2
-            }
-        )
+    pool_requests = Pool(24)
 
+    for ip, data in data_for_stage_2_per_ip.items():
+        pool_requests.apply_async(
+            call_stage_2_no_pipeline,
+            args=(
+                ip,
+                data,
+                file_size,
+                nr_files,
+                intervals,
+                experiment_number
+            )
+        )
+        # requests.post(
+        #     f'{ip}/sorting/no-pipeline/stage2',
+        #     json={
+        #         'partitions': data,
+        #         "config": {
+        #             "file_size": file_size,
+        #             'nr_files': nr_files,
+        #             'intervals': intervals,
+        #         },
+        #         "experiment_number": experiment_number,
+        #         "reading_threads": READING_THREADS_STAGE_2,
+        #         "sort_threads": SORT_THREADS_STAGE_2,
+        #         "writing_threads": WRITING_THREADS_STAGE_2,
+        #         "no_pipeline_threads": 2
+        #     }
+        # )
+    pool_requests.close()
+    pool_requests.join()
     file_found = False
     prefix_results_stage_2 = f'no_pipelining_results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
     object_names = set()

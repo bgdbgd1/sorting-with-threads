@@ -190,21 +190,21 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                 experiment_number
             )
         )
-        requests.post(
-            f'{ip}/sorting/pipeline/stage2',
-            json={
-                'partitions': data,
-                "config": {
-                    "file_size": file_size,
-                    'nr_files': nr_files,
-                    'intervals': intervals,
-                },
-                "experiment_number": experiment_number,
-                "reading_threads": READING_THREADS_STAGE_2,
-                "sort_threads": SORT_THREADS_STAGE_2,
-                "writing_threads": WRITING_THREADS_STAGE_2
-            }
-        )
+        # requests.post(
+        #     f'{ip}/sorting/pipeline/stage2',
+        #     json={
+        #         'partitions': data,
+        #         "config": {
+        #             "file_size": file_size,
+        #             'nr_files': nr_files,
+        #             'intervals': intervals,
+        #         },
+        #         "experiment_number": experiment_number,
+        #         "reading_threads": READING_THREADS_STAGE_2,
+        #         "sort_threads": SORT_THREADS_STAGE_2,
+        #         "writing_threads": WRITING_THREADS_STAGE_2
+        #     }
+        # )
     pool_requests.close()
     pool_requests.join()
 
