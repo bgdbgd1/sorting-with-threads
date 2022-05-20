@@ -1,4 +1,5 @@
 import json
+import sys
 from multiprocessing import Process
 from threading import Thread
 
@@ -326,12 +327,12 @@ def sorting_stage2_no_pipeline():
 if __name__ == '__main__':
     # e.g. python sorting.py 127.0.0.1 1
     port = '5000'
-    # minio_ip = sys.argv[1]
-    # SERVER_NUMBER = sys.argv[2]
+    minio_ip = sys.argv[1]
+    serv_nr = sys.argv[2]
 
-    # if len(sys.argv) == 4:
-    #     port = sys.argv[3]
-    # app.run(host=f'10.149.0.{SERVER_NUMBER}', port=int(port))
+    if len(sys.argv) == 4:
+        port = sys.argv[3]
+    app.run(host=f'10.149.0.{serv_nr}', port=int(port))
 
     # Local settings
     minio_ip = '127.0.0.1'
