@@ -207,8 +207,8 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
         #         "no_pipeline_threads": 2
         #     }
         # )
-    # pool_requests.close()
-    # pool_requests.join()
+    pool_requests.close()
+    pool_requests.join()
     file_found = False
     prefix_results_stage_2 = f'no_pipelining_results_stage2_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
     object_names = set()
