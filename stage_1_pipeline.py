@@ -232,6 +232,8 @@ def execute_stage_1_pipeline(
     pool_write = mp.Pool(nr_write_processes)
     with mp.Manager() as manager:
         files_read = manager.dict()
+        for file_name in initial_files:
+            files_read.update({file_name: {'buffer': None, 'status': 'NOT_READ'}})
         files_read_lock = manager.Lock()
         files_read_counter = manager.Value('files_read_counter', 0)
         all_locations = manager.dict()
@@ -242,7 +244,7 @@ def execute_stage_1_pipeline(
                 with files_read_lock:
                     file_data = files_read.get(file)
                 if (
-                        not file_data and files_read_counter.value < len(initial_files)
+                        file_data and file_data['status'] == 'NOT_READ'
                         # buffers_filled.value < max_buffers_filled
                 ):
                     # read_file(file,
