@@ -196,8 +196,8 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 2.')
 
-    logger.handlers.pop()
-    logger.handlers.pop()
+    # logger.handlers.pop()
+    # logger.handlers.pop()
     return
 
 
