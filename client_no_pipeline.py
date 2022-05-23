@@ -25,7 +25,7 @@ logger = get_logger(
     'client_handler',
     WITH_PIPELINE
 )
-NO_PIPELINE_THREADS = 2
+NO_PIPELINE_THREADS = 24
 
 
 def call_stage_1_no_pipeline(ip, data, file_size, nr_files, intervals, experiment_number):
