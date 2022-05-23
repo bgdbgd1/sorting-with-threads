@@ -265,7 +265,7 @@ def execute_stage_1_pipeline(
                             files_read_counter
                         )
                     )
-                elif (
+                if (
                         file_data and
                         file_data['status'] == 'READ'
                 ):
@@ -279,7 +279,7 @@ def execute_stage_1_pipeline(
                             files_read_lock
                         )
                     )
-                elif (
+                if (
                         file_data and
                         file_data['status'] == 'DETERMINED_CATEGORIES'
                 ):
