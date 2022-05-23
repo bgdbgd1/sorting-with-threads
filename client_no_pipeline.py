@@ -66,14 +66,15 @@ def call_stage_2_no_pipeline(ip, data, file_size, nr_files, intervals, experimen
     )
 
 
-def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, minio_ip, ips):
+def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ips):
     # Instantiate MinIO client
     minio_client = Minio(
-        f"{minio_ip}:9000",
+        f"127.0.0.1:9000",
         access_key="minioadmin",
         secret_key="minioadmin",
         secure=False
     )
+    prefix = 'http://10.149.0.'
     process_uuid = uuid.uuid4()
     results_bucket = 'status'
     prefix_results_stage_1 = f'no_pipelining_results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
@@ -81,13 +82,14 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
     files = [str(i) for i in range(int(nr_files))]
     files_per_ip = {}
     for i in range(len(ips)):
+        ip = f'{prefix}{ips[i]}:5000/'
         files_per_ip.update(
             {
-                ips[i]: files[i * (len(files) // len(ips)): (i+1) * (len(files) // len(ips))]
+                ip: files[i * (len(files) // len(ips)): (i+1) * (len(files) // len(ips))]
             }
         )
         if i == len(ips) - 1 and len(files) % len(ips) != 0:
-            files_per_ip[ips[i]] += files[(i+1) * (len(files) // len(ips)):]
+            files_per_ip[ip] += files[(i+1) * (len(files) // len(ips)):]
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
     pool_requests = Pool(24)
@@ -148,14 +150,15 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
     listed_data_for_stage_2 = list(data_for_stage_2.items())
     listed_data_for_stage_2_per_ip = {}
     data_for_stage_2_per_ip = {}
-    for i, ip in enumerate(ips):
+    for i, ip_suffix in enumerate(ips):
+        ip = f'{prefix}{ip_suffix}:5000/'
         listed_data_for_stage_2_per_ip.update(
             {
                 ip: listed_data_for_stage_2[i * (len(data_for_stage_2) // len(ips)): (i+1) * (len(listed_data_for_stage_2) // len(ips))]
             }
         )
         if i == len(ips) - 1 and len(listed_data_for_stage_2) % len(ips) != 0:
-            listed_data_for_stage_2_per_ip[ips[i]] += listed_data_for_stage_2[(i + 1) * (len(listed_data_for_stage_2) // len(ips)):]
+            listed_data_for_stage_2_per_ip[ip] += listed_data_for_stage_2[(i + 1) * (len(listed_data_for_stage_2) // len(ips)):]
     for ip, data in listed_data_for_stage_2_per_ip.items():
         data_for_stage_2_per_ip.update({ip: dict(data)})
 
@@ -201,4 +204,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 3):
-        run_sorting_experiment(i, '100', '100MB', '256', sys.argv[1], sys.argv[2:])
+        run_sorting_experiment(i, '100', '100MB', '256', sys.argv[1:])

@@ -187,7 +187,7 @@ def sorting_stage2_no_pipeline():
 if __name__ == '__main__':
     # e.g. python sorting.py 127.0.0.1 1
     port = '5000'
-    minio_ip = sys.argv[1]
+    minio_ip = f'10.149.0.{sys.argv[1]}'
     serv_nr = sys.argv[2]
 
     if len(sys.argv) == 4:
