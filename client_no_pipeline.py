@@ -69,7 +69,7 @@ def call_stage_2_no_pipeline(ip, data, file_size, nr_files, intervals, experimen
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ips):
     # Instantiate MinIO client
     minio_client = Minio(
-        f"127.0.0.1:9000",
+        "127.0.0.1:9000",
         access_key="minioadmin",
         secret_key="minioadmin",
         secure=False
@@ -92,6 +92,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
             files_per_ip[ip] += files[(i+1) * (len(files) // len(ips)):]
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
+    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
     pool_requests = Pool(24)
 
     # Send data to servers
@@ -125,6 +126,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
             print("Sleeping")
             sleep(3)
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
+    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
 
     data_from_stage_1 = {}
     data_for_stage_2 = {}
@@ -163,6 +165,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
         data_for_stage_2_per_ip.update({ip: dict(data)})
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 2.')
+    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 2.')
     pool_requests = Pool(24)
 
     for ip, data in data_for_stage_2_per_ip.items():

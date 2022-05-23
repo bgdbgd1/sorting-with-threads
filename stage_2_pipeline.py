@@ -46,10 +46,12 @@ def read_partition(
         elif not partition_data_in_read:
             files_in_read.update({partition_name: [file_name]})
 
-    print(f'Reading partition {partition_name} from file {file_name}')
+    # print(f'Reading partition {partition_name} from file {file_name}')
 
     process_uuid = uuid.uuid4()
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition.")
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
+
     minio_client = Minio(
         f"{minio_ip}:9000",
         access_key="minioadmin",
@@ -62,7 +64,9 @@ def read_partition(
         offset=start_index * 100,
         length=(end_index - start_index + 1) * 100
     ).data
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition.")
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
+
     with files_read_lock:
         if not files_read.get(partition_name):
             files_read.update(
@@ -86,7 +90,6 @@ def read_partition(
             files_read.update({partition_name: new_files_read})
 
 
-
 def sort_category(
         files_read,
         files_sorted,
@@ -101,6 +104,7 @@ def sort_category(
         print("RETURNING from SORT CATEGORY")
     process_uuid = uuid.uuid4()
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting partition.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
 
     files_sorted.update({partition_name: 'Nothing'})
     buffer = io.BytesIO()
@@ -114,9 +118,10 @@ def sort_category(
         buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
     )
     np_array = np.sort(np_array, order='key')
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting partition.")
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
     files_sorted.update({partition_name: np_array})
-    print("FINISHED SORTING")
+    # print("FINISHED SORTING")
 
 
 def write_category(
@@ -138,11 +143,13 @@ def write_category(
         secure=False
     )
 
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing partition.")
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
     minio_client.put_object(write_bucket, category_name,
                             io.BytesIO(files_sorted[category_name].tobytes()),
                             length=files_sorted[category_name].size * 100)
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing partition.")
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
     try:
         files_written.update({category_name: 1})
         # files_written[position] = category_int

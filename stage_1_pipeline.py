@@ -48,6 +48,7 @@ def read_file(
     buffers_filled.value += 1
 
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
 
     file_content = minio_client.get_object(read_bucket, file_name).data
     buf = io.BytesIO()
@@ -56,6 +57,7 @@ def read_file(
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
 
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
 
 
 def determine_categories(
@@ -83,11 +85,15 @@ def determine_categories(
         )
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories {file_name}.')
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories {file_name}.')
     buf = io.BytesIO()
     buf.write(file_info['buffer'])
     np_buffer = np.frombuffer(buf.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
     record_arr = np.sort(np_buffer, order='key')
     logger.info(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
+    print(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
     with files_read_lock:
         files_read.update(
@@ -100,7 +106,8 @@ def determine_categories(
         )
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started determine categories {file_name}.')
-
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started determine categories {file_name}.')
     locations = {file_name: {}}
     num_subcats = 1
     first_char = None
@@ -146,6 +153,8 @@ def determine_categories(
     all_locations.update({file_name: locations})
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
 
 
 def write_file(
@@ -180,6 +189,7 @@ def write_file(
             }
         )
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
+    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
     minio_client.put_object(
         intermediate_bucket,
         file_name,
@@ -187,7 +197,7 @@ def write_file(
         length=file_info['buffer'].size * 100
     )
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
-
+    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
     with files_read_lock:
         files_read.update(
             {
