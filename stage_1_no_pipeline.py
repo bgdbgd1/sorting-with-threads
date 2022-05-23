@@ -158,8 +158,8 @@ def execute_stage_1_no_pipeline(
                 #     intermediate_bucket,
                 #     experiment_number,
                 # )
-        pool.close()
-        pool.join()
+        # pool.close()
+        # pool.join()
         minio_client = Minio(
             f"{minio_ip}:9000",
             access_key="minioadmin",
