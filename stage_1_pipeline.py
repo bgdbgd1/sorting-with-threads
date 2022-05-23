@@ -33,7 +33,7 @@ def read_file(
         files_read_counter
 ):
     with files_read_lock:
-        if files_read.get(file_name):
+        if files_read[file_name]['status'] != 'NOT_READ':
             print("FOUND in READ. RETURNING")
             return
     minio_client = Minio(
