@@ -37,8 +37,12 @@ def execute_all_methods(
 
     ################### READ PARTITIONS ###################
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading category {partition_name}.")
+
     for data in partition_data:
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition file {data['file_name']} for category {partition_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition file {data['file_name']} for category {partition_name}.")
+
         file_content = minio_client.get_object(
             bucket_name=intermediate_bucket,
             object_name=data['file_name'],
@@ -46,21 +50,32 @@ def execute_all_methods(
             length=(data['end_index'] - data['start_index'] + 1) * 100
         ).data
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition file {data['file_name']} for category {partition_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition file {data['file_name']} for category {partition_name}.")
+
         buffer.write(file_content)
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading category {partition_name}.")
 
     ################### SORT CATEGORY #################
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
+
     np_array = np.frombuffer(
         buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
     )
     np_array = np.sort(np_array, order='key')
+
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
 
     ################### WRITE CATEGORY ###################
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {partition_name}.")
+
     minio_client.put_object(final_bucket, partition_name, io.BytesIO(np_array.tobytes()), length=np_array.size * 100)
+
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {partition_name}.")
     # logger.handlers.pop()
     # logger.handlers.pop()
 

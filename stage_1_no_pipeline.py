@@ -43,20 +43,27 @@ def execute_all_methods(
         files_read.update({file_name: {'buffer': None, 'status': 'IN_READ', 'lock': None}})
 
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
 
     file_content = minio_client.get_object(read_bucket, file_name).data
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     buf = io.BytesIO()
     buf.write(file_content)
     np_buffer = np.frombuffer(buf.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories {file_name}.')
-
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories {file_name}.')
     record_arr = np.sort(np_buffer, order='key')
 
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
     logger.info(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started determine categories {file_name}.')
+    print(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started determine categories {file_name}.')
     locations = {file_name: {}}
     num_subcats = 1
@@ -103,11 +110,13 @@ def execute_all_methods(
     all_locations.update({file_name: locations})
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
-
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
     ##################### WRITING FILE #####################
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
-
+    print(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
     minio_client.put_object(
         intermediate_bucket,
         file_name,
@@ -117,6 +126,8 @@ def execute_all_methods(
     with files_read_lock:
         written_files.value += 1
     logger.info(
+        f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
+    print(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
     # logger.handlers.pop()
     # logger.handlers.pop()
