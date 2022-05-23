@@ -26,7 +26,12 @@ def execute_all_methods(
         read_bucket,
         intermediate_bucket,
         experiment_number,
+        files_read_lock,
+        written_files
 ):
+    with files_read_lock:
+        if files_read.get(file_name):
+            return
     minio_client = Minio(
         f"{minio_ip}:9000",
         access_key="minioadmin",
@@ -34,9 +39,8 @@ def execute_all_methods(
         secure=False
     )
     process_uuid = uuid.uuid4()
-    if files_read.get(file_name):
-        return
-    files_read.update({file_name: {'buffer': None, 'status': 'IN_READ', 'lock': None}})
+    with files_read_lock:
+        files_read.update({file_name: {'buffer': None, 'status': 'IN_READ', 'lock': None}})
 
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
 
@@ -110,6 +114,8 @@ def execute_all_methods(
         io.BytesIO(record_arr.tobytes()),
         length=record_arr.size * 100
     )
+    with files_read_lock:
+        written_files.value += 1
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
     # logger.handlers.pop()
@@ -133,9 +139,13 @@ def execute_stage_1_no_pipeline(
     pool = mp.Pool(nr_processes)
     with mp.Manager() as manager:
         files_read = manager.dict()
+        files_read_lock = manager.Lock()
         all_locations = manager.dict()
+        written_files = manager.Value('written_files', 0)
+        # while written_files.value < len(initial_files):
         for file in initial_files:
-            file_data = files_read.get(file)
+            with files_read_lock:
+                file_data = files_read.get(file)
             if not file_data:
                 pool.apply_async(
                     execute_all_methods,
@@ -147,6 +157,8 @@ def execute_stage_1_no_pipeline(
                         read_bucket,
                         intermediate_bucket,
                         experiment_number,
+                        files_read_lock,
+                        written_files
                     )
                 )
                 # execute_all_methods(
@@ -158,8 +170,8 @@ def execute_stage_1_no_pipeline(
                 #     intermediate_bucket,
                 #     experiment_number,
                 # )
-        # pool.close()
-        # pool.join()
+        pool.close()
+        pool.join()
         minio_client = Minio(
             f"{minio_ip}:9000",
             access_key="minioadmin",

@@ -66,7 +66,6 @@ def call_stage_2_pipeline(ip, data, file_size, nr_files, intervals, experiment_n
 
 
 def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, minio_ip, ips):
-
     # Instantiate MinIO client
     minio_client = Minio(
         f"{minio_ip}:9000",
@@ -105,21 +104,6 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                 experiment_number
             )
         )
-        # requests.post(
-        #     f'{ip}/sorting/pipeline/stage1',
-        #     json={
-        #         "file_names": data,
-        #         "config": {
-        #             "file_size": file_size,
-        #             'nr_files': nr_files,
-        #             'intervals': intervals,
-        #         },
-        #         "experiment_number": experiment_number,
-        #         "reading_threads": READING_THREADS_STAGE_1,
-        #         "det_cat_threads": DET_CAT_THREADS_STAGE_1,
-        #         "writing_threads": WRITING_THREADS_STAGE_1
-        #     }
-        # )
     pool_requests.close()
     pool_requests.join()
     # Check if all servers finished STAGE 1
@@ -148,7 +132,6 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
         content = json.loads(minio_client.get_object(bucket_name=results_bucket, object_name=result_stage1).data.decode())
         for file_data in content:
             data_from_stage_1.update(file_data)
-        # data_from_stage_1.update(content)
 
     for file, file_data in data_from_stage_1.items():
         for file_partition, positions in file_data.items():
@@ -190,21 +173,6 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, mi
                 experiment_number
             )
         )
-        # requests.post(
-        #     f'{ip}/sorting/pipeline/stage2',
-        #     json={
-        #         'partitions': data,
-        #         "config": {
-        #             "file_size": file_size,
-        #             'nr_files': nr_files,
-        #             'intervals': intervals,
-        #         },
-        #         "experiment_number": experiment_number,
-        #         "reading_threads": READING_THREADS_STAGE_2,
-        #         "sort_threads": SORT_THREADS_STAGE_2,
-        #         "writing_threads": WRITING_THREADS_STAGE_2
-        #     }
-        # )
     pool_requests.close()
     pool_requests.join()
 
