@@ -29,13 +29,13 @@ def read_file(
         minio_ip,
         read_bucket,
         experiment_number,
-        files_read_lock
+        files_read_lock,
+        files_read_counter
 ):
     with files_read_lock:
         if files_read.get(file_name):
             print("FOUND in READ. RETURNING")
             return
-    print("OUTSIDE IF IN READ")
     minio_client = Minio(
         f"{minio_ip}:9000",
         access_key="minioadmin",
@@ -55,7 +55,7 @@ def read_file(
     buf.write(file_content)
     with files_read_lock:
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
-
+        files_read_counter.value += 1
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
 
@@ -233,6 +233,7 @@ def execute_stage_1_pipeline(
     with mp.Manager() as manager:
         files_read = manager.dict()
         files_read_lock = manager.Lock()
+        files_read_counter = manager.Value('files_read_counter', 0)
         all_locations = manager.dict()
         buffers_filled = manager.Value('buffers_filled', 0)
         written_files = manager.Value('written_files', 0)
@@ -241,8 +242,8 @@ def execute_stage_1_pipeline(
                 with files_read_lock:
                     file_data = files_read.get(file)
                 if (
-                        not file_data and
-                        buffers_filled.value < max_buffers_filled
+                        not file_data and files_read_counter.value < len(initial_files)
+                        # buffers_filled.value < max_buffers_filled
                 ):
                     # read_file(file,
                     #           files_read,
@@ -260,7 +261,8 @@ def execute_stage_1_pipeline(
                             minio_ip,
                             read_bucket,
                             experiment_number,
-                            files_read_lock
+                            files_read_lock,
+                            files_read_counter
                         )
                     )
                 elif (
