@@ -5,8 +5,10 @@ from flask import Flask, request
 
 from stage_1_no_pipeline import execute_stage_1_no_pipeline
 from stage_2_no_pipeline import execute_stage_2_no_pipeline
-from stage_1_pipeline import execute_stage_1_pipeline
+# from stage_1_pipeline import execute_stage_1_pipeline
+from stage_1_pipeline_fourth import execute_stage_1_pipeline
 from stage_2_pipeline import execute_stage_2_pipeline
+
 from constants import SERVER_NUMBER
 app = Flask(__name__)
 minio_ip = ''
@@ -196,4 +198,4 @@ if __name__ == '__main__':
 
     # Local settings
     # minio_ip = '127.0.0.1'
-    # app.run(host='0.0.0.0', port=5001)
+    # app.run(host='0.0.0.0', port=5000)

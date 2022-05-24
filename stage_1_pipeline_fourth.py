@@ -30,34 +30,38 @@ def read_file(
         read_bucket,
         experiment_number,
         files_read_lock,
-        files_read_counter
+        files_read_counter,
+        scheduled_files_statuses
 ):
-    with files_read_lock:
-        if files_read[file_name]['status'] != 'NOT_READ':
-            print("FOUND in READ. RETURNING")
-            return
-    minio_client = Minio(
-        f"{minio_ip}:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        secure=False
-    )
-    process_uuid = uuid.uuid4()
-    with files_read_lock:
-        files_read.update({file_name: {'buffer': None, 'status': 'IN_READ'}})
-    buffers_filled.value += 1
+    try:
+        with files_read_lock:
+            if files_read.get(file_name):
+                print("FOUND in READ. RETURNING")
+                return
+        minio_client = Minio(
+            f"{minio_ip}:9000",
+            access_key="minioadmin",
+            secret_key="minioadmin",
+            secure=False
+        )
+        process_uuid = uuid.uuid4()
+        with files_read_lock:
+            files_read.update({file_name: {'buffer': None, 'status': 'IN_READ'}})
+        buffers_filled.value += 1
 
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
 
-    file_content = minio_client.get_object(read_bucket, file_name).data
-    buf = io.BytesIO()
-    buf.write(file_content)
-    with files_read_lock:
-        files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
-        files_read_counter.value += 1
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+        file_content = minio_client.get_object(read_bucket, file_name).data
+        buf = io.BytesIO()
+        buf.write(file_content)
+        with files_read_lock:
+            files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
+            files_read_counter.value += 1
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
+    except:
+        scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
 
 
 def determine_categories(
@@ -232,8 +236,9 @@ def execute_stage_1_pipeline(
     pool_write = mp.Pool(nr_write_processes)
     with mp.Manager() as manager:
         files_read = manager.dict()
+        scheduled_files_statuses = manager.dict()
         for file_name in initial_files:
-            files_read.update({file_name: {'buffer': None, 'status': 'NOT_READ'}})
+            scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
         files_read_lock = manager.Lock()
         files_read_counter = manager.Value('files_read_counter', 0)
         all_locations = manager.dict()
@@ -243,31 +248,26 @@ def execute_stage_1_pipeline(
             for file in initial_files:
                 with files_read_lock:
                     file_data = files_read.get(file)
-                    if (
-                            file_data and file_data['status'] == 'NOT_READ'
-                            # buffers_filled.value < max_buffers_filled
-                    ):
-                        # read_file(file,
-                        #           files_read,
-                        #           buffers_filled,
-                        #           minio_ip,
-                        #           read_bucket,
-                        #           experiment_number,
-                        #           files_read_lock)
-                        pool_read.apply_async(
-                            read_file,
-                            args=(
-                                file,
-                                files_read,
-                                buffers_filled,
-                                minio_ip,
-                                read_bucket,
-                                experiment_number,
-                                files_read_lock,
-                                files_read_counter
-                            )
-                        )
                 if (
+                        not file_data and files_read_counter.value < len(initial_files) and scheduled_files_statuses[file_data] == 'NOT_SCHEDULED'
+                        # buffers_filled.value < max_buffers_filled
+                ):
+                    pool_read.apply_async(
+                        read_file,
+                        args=(
+                            file,
+                            files_read,
+                            buffers_filled,
+                            minio_ip,
+                            read_bucket,
+                            experiment_number,
+                            files_read_lock,
+                            files_read_counter,
+                            scheduled_files_statuses
+                        )
+                    )
+                    scheduled_files_statuses[file_data] = 'SCHEDULED'
+                elif (
                         file_data and
                         file_data['status'] == 'READ'
                 ):
@@ -281,7 +281,7 @@ def execute_stage_1_pipeline(
                             files_read_lock
                         )
                     )
-                if (
+                elif (
                         file_data and
                         file_data['status'] == 'DETERMINED_CATEGORIES'
                 ):

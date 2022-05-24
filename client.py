@@ -80,7 +80,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
     files = [str(i) for i in range(int(nr_files))]
     files_per_ip = {}
     prefix = 'http://10.149.0.'
-
+    # prefix = 'http://192.168.0.'
     for i in range(len(ips)):
         ip = f'{prefix}{ips[i]}:5000/'
         files_per_ip.update(
@@ -129,6 +129,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
     return
+
     data_from_stage_1 = {}
     data_for_stage_2 = {}
 
