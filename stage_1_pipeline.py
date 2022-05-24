@@ -239,14 +239,28 @@ def execute_stage_1_pipeline(
         all_locations = manager.dict()
         buffers_filled = manager.Value('buffers_filled', 0)
         written_files = manager.Value('written_files', 0)
+        for file in initial_files:
+            pool_read.apply_async(
+                read_file,
+                args=(
+                    file,
+                    files_read,
+                    buffers_filled,
+                    minio_ip,
+                    read_bucket,
+                    experiment_number,
+                    files_read_lock,
+                    files_read_counter
+                )
+            )
         while written_files.value < len(initial_files):
-            for file in initial_files:
-                with files_read_lock:
-                    file_data = files_read.get(file)
-                if (
-                        file_data and file_data['status'] == 'NOT_READ'
-                        # buffers_filled.value < max_buffers_filled
-                ):
+            # for file in initial_files:
+            with files_read_lock:
+                file_data = files_read.get(file)
+                # if (
+                #         file_data and file_data['status'] == 'NOT_READ'
+                #         buffers_filled.value < max_buffers_filled
+                # ):
                     # read_file(file,
                     #           files_read,
                     #           buffers_filled,
@@ -254,50 +268,50 @@ def execute_stage_1_pipeline(
                     #           read_bucket,
                     #           experiment_number,
                     #           files_read_lock)
-                    pool_read.apply_async(
-                        read_file,
-                        args=(
-                            file,
-                            files_read,
-                            buffers_filled,
-                            minio_ip,
-                            read_bucket,
-                            experiment_number,
-                            files_read_lock,
-                            files_read_counter
-                        )
+                    # pool_read.apply_async(
+                    #     read_file,
+                    #     args=(
+                    #         file,
+                    #         files_read,
+                    #         buffers_filled,
+                    #         minio_ip,
+                    #         read_bucket,
+                    #         experiment_number,
+                    #         files_read_lock,
+                    #         files_read_counter
+                    #     )
+                    # )
+            if (
+                    file_data and
+                    file_data['status'] == 'READ'
+            ):
+                pool_determine_categories.apply_async(
+                    determine_categories,
+                    args=(
+                        file,
+                        files_read,
+                        all_locations,
+                        experiment_number,
+                        files_read_lock
                     )
-                if (
-                        file_data and
-                        file_data['status'] == 'READ'
-                ):
-                    pool_determine_categories.apply_async(
-                        determine_categories,
-                        args=(
-                            file,
-                            files_read,
-                            all_locations,
-                            experiment_number,
-                            files_read_lock
-                        )
+                )
+            if (
+                    file_data and
+                    file_data['status'] == 'DETERMINED_CATEGORIES'
+            ):
+                pool_write.apply_async(
+                    write_file,
+                    args=(
+                        file,
+                        files_read,
+                        buffers_filled,
+                        written_files,
+                        intermediate_bucket,
+                        minio_ip,
+                        experiment_number,
+                        files_read_lock
                     )
-                if (
-                        file_data and
-                        file_data['status'] == 'DETERMINED_CATEGORIES'
-                ):
-                    pool_write.apply_async(
-                        write_file,
-                        args=(
-                            file,
-                            files_read,
-                            buffers_filled,
-                            written_files,
-                            intermediate_bucket,
-                            minio_ip,
-                            experiment_number,
-                            files_read_lock
-                        )
-                    )
+                )
 
         utfcontent = json.dumps(all_locations.values()).encode('utf-8')
         minio_client = Minio(
