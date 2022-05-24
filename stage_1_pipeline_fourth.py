@@ -249,7 +249,7 @@ def execute_stage_1_pipeline(
                 with files_read_lock:
                     file_data = files_read.get(file)
                 if (
-                        not file_data and files_read_counter.value < len(initial_files) and scheduled_files_statuses[file_data] == 'NOT_SCHEDULED'
+                        not file_data and files_read_counter.value < len(initial_files) and scheduled_files_statuses[file] == 'NOT_SCHEDULED'
                         # buffers_filled.value < max_buffers_filled
                 ):
                     pool_read.apply_async(
@@ -266,7 +266,7 @@ def execute_stage_1_pipeline(
                             scheduled_files_statuses
                         )
                     )
-                    scheduled_files_statuses[file_data] = 'SCHEDULED'
+                    scheduled_files_statuses[file] = 'SCHEDULED'
                 elif (
                         file_data and
                         file_data['status'] == 'READ'
