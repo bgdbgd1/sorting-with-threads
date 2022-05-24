@@ -187,9 +187,7 @@ def execute_stage_2_pipeline(
         files_in_read = manager.dict()
         scheduled_files_statuses = manager.dict()
         for partition_name, partition_data in partitions.items():
-            scheduled_files_statuses.update({partition_name: {}})
-            for file_data in partition_data:
-                scheduled_files_statuses[partition_name].update({file_data['file_name']: 'NOT_SCHEDULED'})
+            scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
         files_read = manager.dict()
         files_sorted = manager.dict()
         files_in_read_lock = manager.Lock()
