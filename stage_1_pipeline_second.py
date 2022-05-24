@@ -252,6 +252,7 @@ def execute_stage_1_pipeline(
                         not file_data and files_read_counter.value < len(initial_files) and scheduled_files_statuses[file] == 'NOT_SCHEDULED'
                         # buffers_filled.value < max_buffers_filled
                 ):
+                    scheduled_files_statuses[file] = 'SCHEDULED'
                     pool_read.apply_async(
                         read_file,
                         args=(
@@ -266,8 +267,7 @@ def execute_stage_1_pipeline(
                             scheduled_files_statuses
                         )
                     )
-                    scheduled_files_statuses[file] = 'SCHEDULED'
-                elif (
+                if (
                         file_data and
                         file_data['status'] == 'READ'
                 ):
@@ -281,7 +281,7 @@ def execute_stage_1_pipeline(
                             files_read_lock
                         )
                     )
-                elif (
+                if (
                         file_data and
                         file_data['status'] == 'DETERMINED_CATEGORIES'
                 ):
