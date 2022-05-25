@@ -188,14 +188,14 @@ def sorting_stage2_no_pipeline():
 
 if __name__ == '__main__':
     # e.g. python sorting.py 127.0.0.1 1
-    # port = '5000'
-    # minio_ip = f'10.149.0.{sys.argv[1]}'
-    # serv_nr = sys.argv[2]
-    #
-    # if len(sys.argv) == 4:
-    #     port = sys.argv[3]
-    # app.run(host=f'10.149.0.{serv_nr}', port=int(port))
+    port = '5000'
+    minio_ip = f'10.149.0.{sys.argv[1]}'
+    serv_nr = sys.argv[2]
+
+    if len(sys.argv) == 4:
+        port = sys.argv[3]
+    app.run(host=f'10.149.0.{serv_nr}', port=int(port))
 
     # Local settings
-    minio_ip = '127.0.0.1'
-    app.run(host='0.0.0.0', port=5000)
+    # minio_ip = '127.0.0.1'
+    # app.run(host='0.0.0.0', port=5000)

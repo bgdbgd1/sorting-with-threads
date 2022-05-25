@@ -79,8 +79,8 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
     files = [str(i) for i in range(int(nr_files))]
     files_per_ip = {}
-    # prefix = 'http://10.149.0.'
-    prefix = 'http://192.168.0.'
+    prefix = 'http://10.149.0.'
+    # prefix = 'http://192.168.0.'
     for i in range(len(ips)):
         ip = f'{prefix}{ips[i]}:5000/'
         files_per_ip.update(
@@ -97,20 +97,20 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
     # # Send data to servers
     pool_requests = Pool(24)
 
-    # for ip, data in files_per_ip.items():
-    #     pool_requests.apply_async(
-    #         call_stage_1_pipeline,
-    #         args=(
-    #             ip,
-    #             data,
-    #             file_size,
-    #             nr_files,
-    #             intervals,
-    #             experiment_number
-    #         )
-    #     )
-    # pool_requests.close()
-    # pool_requests.join()
+    for ip, data in files_per_ip.items():
+        pool_requests.apply_async(
+            call_stage_1_pipeline,
+            args=(
+                ip,
+                data,
+                file_size,
+                nr_files,
+                intervals,
+                experiment_number
+            )
+        )
+    pool_requests.close()
+    pool_requests.join()
     # Check if all servers finished STAGE 1
     file_found = False
     object_names = set()
@@ -212,4 +212,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 2):
-        run_sorting_experiment(i, '10', '10MB', '256', sys.argv[1:])
+        run_sorting_experiment(i, '100', '100MB', '256', sys.argv[1:])
