@@ -32,7 +32,7 @@ def read_file(
         # files_read_lock,
         files_read_counter,
         scheduled_files_statuses,
-        read_buffers_filled
+        read_buffers
 ):
     try:
         # with files_read_lock:
@@ -59,7 +59,7 @@ def read_file(
         # with files_read_lock:
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
         files_read_counter.value += 1
-        read_buffers_filled.value += 1
+        read_buffers.value += 1
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     except:
@@ -72,7 +72,7 @@ def determine_categories(
         all_locations,
         experiment_number,
         # files_read_lock,
-        det_cat_buffers_filled
+        det_buffers
 ):
     process_uuid = uuid.uuid4()
     # with files_read_lock:
@@ -158,7 +158,7 @@ def determine_categories(
         'file_name': file_name
     }
     all_locations.update({file_name: locations})
-    det_cat_buffers_filled.value += 1
+    det_buffers.value += 1
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
     print(
@@ -174,8 +174,8 @@ def write_file(
         minio_ip,
         experiment_number,
         # files_read_lock,
-        read_buffers_filled,
-        det_cat_buffers_filled,
+        read_buffers,
+        det_buffers,
 ):
     minio_client = Minio(
         f"{minio_ip}:9000",
@@ -219,8 +219,8 @@ def write_file(
     )
     written_files.value += 1
     buffers_filled.value -= 1
-    read_buffers_filled.value -= 1
-    det_cat_buffers_filled.value -= 1
+    read_buffers.value -= 1
+    det_buffers.value -= 1
 
 
 def execute_stage_1_pipeline(
@@ -254,8 +254,8 @@ def execute_stage_1_pipeline(
         written_files = manager.Value('written_files', 0)
         max_read_buffers_filled = 15
         max_det_cat_buffers_filled = 15
-        read_buffers_filled = mp.Value('i', 0)
-        det_cat_buffers_filled = mp.Value('i', 0)
+        read_buffers = mp.Value('read_buffers', 0)
+        det_buffers = mp.Value('read_buffers', 0)
 
         while written_files.value < len(initial_files):
             for file in initial_files:
@@ -264,7 +264,7 @@ def execute_stage_1_pipeline(
                 if (
                         not file_data and files_read_counter.value < len(initial_files) and
                         scheduled_files_statuses[file] == 'NOT_SCHEDULED' and
-                        read_buffers_filled.value < max_read_buffers_filled
+                        read_buffers.value < max_read_buffers_filled
                         # buffers_filled.value < max_buffers_filled
                 ):
                     scheduled_files_statuses[file] = 'SCHEDULED'
@@ -280,13 +280,13 @@ def execute_stage_1_pipeline(
                             # files_read_lock,
                             files_read_counter,
                             scheduled_files_statuses,
-                            read_buffers_filled
+                            read_buffers
                         )
                     )
                 if (
                         file_data and
                         file_data['status'] == 'READ' and
-                        det_cat_buffers_filled.value < max_det_cat_buffers_filled
+                        det_buffers.value < max_det_cat_buffers_filled
                 ):
                     pool_determine_categories.apply_async(
                         determine_categories,
@@ -296,7 +296,7 @@ def execute_stage_1_pipeline(
                             all_locations,
                             experiment_number,
                             # files_read_lock,
-                            det_cat_buffers_filled
+                            det_buffers
                         )
                     )
                 if (
@@ -314,8 +314,8 @@ def execute_stage_1_pipeline(
                             minio_ip,
                             experiment_number,
                             # files_read_lock,
-                            read_buffers_filled,
-                            det_cat_buffers_filled
+                            read_buffers,
+                            det_buffers
                         )
                     )
 
