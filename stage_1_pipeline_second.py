@@ -254,8 +254,8 @@ def execute_stage_1_pipeline(
         written_files = manager.Value('written_files', 0)
         max_read_buffers_filled = 15
         max_det_cat_buffers_filled = 15
-        read_buffers = mp.Value('read_buffers', 0)
-        det_buffers = mp.Value('read_buffers', 0)
+        read_buffers = manager.Value('read_buffers', 0)
+        det_buffers = manager.Value('read_buffers', 0)
 
         while written_files.value < len(initial_files):
             for file in initial_files:
