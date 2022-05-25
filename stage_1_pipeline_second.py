@@ -29,15 +29,16 @@ def read_file(
         minio_ip,
         read_bucket,
         experiment_number,
-        files_read_lock,
+        # files_read_lock,
         files_read_counter,
-        scheduled_files_statuses
+        scheduled_files_statuses,
+        read_buffers_filled
 ):
     try:
-        with files_read_lock:
-            if files_read.get(file_name):
-                print("FOUND in READ. RETURNING")
-                return
+        # with files_read_lock:
+        if files_read.get(file_name):
+            print("FOUND in READ. RETURNING")
+            return
         minio_client = Minio(
             f"{minio_ip}:9000",
             access_key="minioadmin",
@@ -45,8 +46,8 @@ def read_file(
             secure=False
         )
         process_uuid = uuid.uuid4()
-        with files_read_lock:
-            files_read.update({file_name: {'buffer': None, 'status': 'IN_READ'}})
+        # with files_read_lock:
+        files_read.update({file_name: {'buffer': None, 'status': 'IN_READ'}})
         buffers_filled.value += 1
 
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
@@ -55,9 +56,10 @@ def read_file(
         file_content = minio_client.get_object(read_bucket, file_name).data
         buf = io.BytesIO()
         buf.write(file_content)
-        with files_read_lock:
-            files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
-            files_read_counter.value += 1
+        # with files_read_lock:
+        files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
+        files_read_counter.value += 1
+        read_buffers_filled.value += 1
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     except:
@@ -69,24 +71,25 @@ def determine_categories(
         files_read,
         all_locations,
         experiment_number,
-        files_read_lock
+        # files_read_lock,
+        det_cat_buffers_filled
 ):
     process_uuid = uuid.uuid4()
-    with files_read_lock:
-        file_info = files_read.get(file_name)
+    # with files_read_lock:
+    file_info = files_read.get(file_name)
     if file_info['status'] != 'READ':
         print("Return from DETERMINE CATEGORIES")
         return
-    with files_read_lock:
-        files_read.update(
-            {
-                file_name: {
-                    'buffer': files_read[file_name]['buffer'],
-                    'status': 'DETERMINING_CATEGORIES',
-                    'length': files_read[file_name]['length']
-                }
+    # with files_read_lock:
+    files_read.update(
+        {
+            file_name: {
+                'buffer': files_read[file_name]['buffer'],
+                'status': 'DETERMINING_CATEGORIES',
+                'length': files_read[file_name]['length']
             }
-        )
+        }
+    )
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories {file_name}.')
     print(
@@ -99,15 +102,15 @@ def determine_categories(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
     print(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
-    with files_read_lock:
-        files_read.update(
-            {
-                file_name: {
-                    'buffer': record_arr,
-                    'status': 'DETERMINED_CATEGORIES'
-                }
+    # with files_read_lock:
+    files_read.update(
+        {
+            file_name: {
+                'buffer': record_arr,
+                'status': 'DETERMINED_CATEGORIES'
             }
-        )
+        }
+    )
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started determine categories {file_name}.')
     print(
@@ -155,6 +158,7 @@ def determine_categories(
         'file_name': file_name
     }
     all_locations.update({file_name: locations})
+    det_cat_buffers_filled.value += 1
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
     print(
@@ -169,7 +173,9 @@ def write_file(
         intermediate_bucket,
         minio_ip,
         experiment_number,
-        files_read_lock
+        # files_read_lock,
+        read_buffers_filled,
+        det_cat_buffers_filled,
 ):
     minio_client = Minio(
         f"{minio_ip}:9000",
@@ -183,15 +189,15 @@ def write_file(
     if file_info['status'] != 'DETERMINED_CATEGORIES':
         print("Return from WRITE")
         return
-    with files_read_lock:
-        files_read.update(
-            {
-                file_name: {
-                    'buffer': files_read[file_name]['buffer'],
-                    'status': 'WRITING'
-                }
+    # with files_read_lock:
+    files_read.update(
+        {
+            file_name: {
+                'buffer': files_read[file_name]['buffer'],
+                'status': 'WRITING'
             }
-        )
+        }
+    )
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
     minio_client.put_object(
@@ -202,17 +208,19 @@ def write_file(
     )
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
-    with files_read_lock:
-        files_read.update(
-            {
-                file_name: {
-                    'buffer': None,
-                    'status': 'WRITTEN'
-                }
+    # with files_read_lock:
+    files_read.update(
+        {
+            file_name: {
+                'buffer': None,
+                'status': 'WRITTEN'
             }
-        )
+        }
+    )
     written_files.value += 1
     buffers_filled.value -= 1
+    read_buffers_filled.value -= 1
+    det_cat_buffers_filled.value -= 1
 
 
 def execute_stage_1_pipeline(
@@ -239,17 +247,24 @@ def execute_stage_1_pipeline(
         scheduled_files_statuses = manager.dict()
         for file_name in initial_files:
             scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
-        files_read_lock = manager.Lock()
+        # files_read_lock = manager.Lock()
         files_read_counter = manager.Value('files_read_counter', 0)
         all_locations = manager.dict()
         buffers_filled = manager.Value('buffers_filled', 0)
         written_files = manager.Value('written_files', 0)
+        max_read_buffers_filled = 15
+        max_det_cat_buffers_filled = 15
+        read_buffers_filled = mp.Value('read_buffers_filled', 0)
+        det_cat_buffers_filled = mp.Value('det_cat_buffers_filled', 0)
+
         while written_files.value < len(initial_files):
             for file in initial_files:
-                with files_read_lock:
-                    file_data = files_read.get(file)
+                # with files_read_lock:
+                file_data = files_read.get(file)
                 if (
-                        not file_data and files_read_counter.value < len(initial_files) and scheduled_files_statuses[file] == 'NOT_SCHEDULED'
+                        not file_data and files_read_counter.value < len(initial_files) and
+                        scheduled_files_statuses[file] == 'NOT_SCHEDULED' and
+                        read_buffers_filled.value < max_read_buffers_filled
                         # buffers_filled.value < max_buffers_filled
                 ):
                     scheduled_files_statuses[file] = 'SCHEDULED'
@@ -262,14 +277,16 @@ def execute_stage_1_pipeline(
                             minio_ip,
                             read_bucket,
                             experiment_number,
-                            files_read_lock,
+                            # files_read_lock,
                             files_read_counter,
-                            scheduled_files_statuses
+                            scheduled_files_statuses,
+                            read_buffers_filled
                         )
                     )
                 if (
                         file_data and
-                        file_data['status'] == 'READ'
+                        file_data['status'] == 'READ' and
+                        det_cat_buffers_filled.value < max_det_cat_buffers_filled
                 ):
                     pool_determine_categories.apply_async(
                         determine_categories,
@@ -278,7 +295,8 @@ def execute_stage_1_pipeline(
                             files_read,
                             all_locations,
                             experiment_number,
-                            files_read_lock
+                            # files_read_lock,
+                            det_cat_buffers_filled
                         )
                     )
                 if (
@@ -295,7 +313,9 @@ def execute_stage_1_pipeline(
                             intermediate_bucket,
                             minio_ip,
                             experiment_number,
-                            files_read_lock
+                            # files_read_lock,
+                            read_buffers_filled,
+                            det_cat_buffers_filled
                         )
                     )
 

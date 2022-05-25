@@ -24,8 +24,8 @@ logger = get_logger(
 def read_partition(
         files_in_read,
         files_read,
-        files_in_read_lock,
-        files_read_lock,
+        # files_in_read_lock,
+        # files_read_lock,
         partition_name,
         file_name,
         start_index,
@@ -36,17 +36,17 @@ def read_partition(
         scheduled_files_statuses
 ):
     try:
-        with files_in_read_lock:
-            partition_data_in_read = files_in_read.get(partition_name)
-            if partition_data_in_read and file_name in partition_data_in_read:
-                print("RETURNING from READ")
-                return
-            elif partition_data_in_read and file_name not in partition_data_in_read:
-                new_in_read = files_in_read[partition_name]
-                new_in_read.append(file_name)
-                files_in_read.update({partition_name: new_in_read})
-            elif not partition_data_in_read:
-                files_in_read.update({partition_name: [file_name]})
+        # with files_in_read_lock:
+        partition_data_in_read = files_in_read.get(partition_name)
+        if partition_data_in_read and file_name in partition_data_in_read:
+            print("RETURNING from READ")
+            return
+        elif partition_data_in_read and file_name not in partition_data_in_read:
+            new_in_read = files_in_read[partition_name]
+            new_in_read.append(file_name)
+            files_in_read.update({partition_name: new_in_read})
+        elif not partition_data_in_read:
+            files_in_read.update({partition_name: [file_name]})
 
         # print(f'Reading partition {partition_name} from file {file_name}')
 
@@ -69,29 +69,30 @@ def read_partition(
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
 
-        with files_read_lock:
-            if not files_read.get(partition_name):
-                files_read.update(
-                    {
-                        partition_name: {
-                            file_name: {
-                                'buffer': file_content
-                            }
-                        }
-                    }
-                )
-            else:
-                new_files_read = files_read[partition_name]
-                new_files_read.update(
-                    {
+        # with files_read_lock:
+        if not files_read.get(partition_name):
+            files_read.update(
+                {
+                    partition_name: {
                         file_name: {
                             'buffer': file_content
                         }
                     }
-                )
-                files_read.update({partition_name: new_files_read})
+                }
+            )
+        else:
+            new_files_read = files_read[partition_name]
+            new_files_read.update(
+                {
+                    file_name: {
+                        'buffer': file_content
+                    }
+                }
+            )
+            files_read.update({partition_name: new_files_read})
     except Exception:
         scheduled_files_statuses[partition_name][file_name] = 'NOT_SCHEDULED'
+
 
 def sort_category(
         files_read,
@@ -190,21 +191,21 @@ def execute_stage_2_pipeline(
             scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
         files_read = manager.dict()
         files_sorted = manager.dict()
-        files_in_read_lock = manager.Lock()
-        files_read_lock = manager.Lock()
-        buffers_filled = manager.Value('buffers_filled', 0)
+        # files_in_read_lock = manager.Lock()
+        # files_read_lock = manager.Lock()
+        # buffers_filled = manager.Value('buffers_filled', 0)
         files_written = manager.dict()
         while len(files_written) < len(partitions_names):
             for partition_name, partition_data in partitions.items():
                 partition_data_in_read = None
-                with files_in_read_lock:
-                    partition_data_in_read = files_in_read.get(partition_name)
+                # with files_in_read_lock:
+                partition_data_in_read = files_in_read.get(partition_name)
                 if not partition_data_in_read:
                     files_in_read.update({partition_name: []})
                 for file_data in partition_data:
                     is_ok_to_read = False
-                    with files_in_read_lock:
-                        is_ok_to_read = (file_data['file_name'] not in files_in_read[partition_name])
+                    # with files_in_read_lock:
+                    is_ok_to_read = (file_data['file_name'] not in files_in_read[partition_name])
                     if is_ok_to_read and scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED':
                         scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
                         pool_read.apply_async(
@@ -212,8 +213,8 @@ def execute_stage_2_pipeline(
                             args=(
                                 files_in_read,
                                 files_read,
-                                files_in_read_lock,
-                                files_read_lock,
+                                # files_in_read_lock,
+                                # files_read_lock,
                                 partition_name,
                                 file_data['file_name'],
                                 file_data['start_index'],
