@@ -54,7 +54,6 @@ def read_file(
         buf.write(file_content)
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
         files_read_counter.value += 1
-        # read_buffers.value += 1
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     except:
@@ -152,7 +151,6 @@ def determine_categories(
             'file_name': file_name
         }
         all_locations.update({file_name: locations})
-        det_buffers.value += 1
         logger.info(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
         print(
