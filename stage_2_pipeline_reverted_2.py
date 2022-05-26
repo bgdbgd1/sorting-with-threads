@@ -196,65 +196,97 @@ def execute_stage_2_pipeline(
         files_written = manager.dict()
         while len(files_written) < len(partitions_names):
             for partition_name, partition_data in partitions.items():
-                partition_data_in_read = None
-                with files_in_read_lock:
-                    partition_data_in_read = files_in_read.get(partition_name)
-                if not partition_data_in_read:
-                    files_in_read.update({partition_name: []})
-                for file_data in partition_data:
-                    is_ok_to_read = False
-                    with files_in_read_lock:
-                        is_ok_to_read = (file_data['file_name'] not in files_in_read[partition_name])
-                    if is_ok_to_read and scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED':
-                        scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
-                        # Extra added
-                        files_in_read[partition_name].append(file_data['file_name'])
-                        pool_read.apply_async(
-                            read_partition,
-                            args=(
-                                files_in_read,
-                                files_read,
-                                files_in_read_lock,
-                                files_read_lock,
-                                partition_name,
-                                file_data['file_name'],
-                                file_data['start_index'],
-                                file_data['end_index'],
-                                intermediate_bucket,
-                                minio_ip,
-                                experiment_number,
-                                scheduled_files_statuses
-                            )
-                        )
-            for part_name in partitions_names:
                 if (
-                        files_read.get(part_name) is not None and
-                        len(files_read[part_name]) == len(partitions[part_name]) and
-                        files_sorted.get(part_name) is None
+                        files_read.get(partition_name) is not None and
+                        len(files_read[partition_name]) == len(partitions[partition_name]) and
+                        files_sorted.get(partition_name) is None
                 ):
                     pool_sort.apply_async(
                         sort_category,
                         args=(
                             files_read,
                             files_sorted,
-                            part_name,
-                            len(partitions[part_name]),
+                            partition_name,
+                            len(partitions[partition_name]),
                             experiment_number
                         )
                     )
-
-                if files_sorted.get(part_name) is not None and files_written.get(part_name) is None:
+                elif (
+                        files_sorted.get(partition_name) is not None and
+                        files_written.get(partition_name) is None
+                ):
                     pool_write.apply_async(
                         write_category,
                         args=(
                             files_written,
                             files_sorted,
-                            part_name,
+                            partition_name,
                             write_bucket,
                             minio_ip,
                             experiment_number
                         )
                     )
+                elif files_written.get(partition_name) is not None:
+                    continue
+                else:
+                    partition_data_in_read = None
+                    with files_in_read_lock:
+                        partition_data_in_read = files_in_read.get(partition_name)
+                    if not partition_data_in_read:
+                        files_in_read.update({partition_name: []})
+                    for file_data in partition_data:
+                        is_ok_to_read = False
+                        with files_in_read_lock:
+                            is_ok_to_read = (file_data['file_name'] not in files_in_read[partition_name])
+                        if is_ok_to_read and scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED':
+                            scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
+                            files_in_read[partition_name].append(file_data['file_name'])
+                            pool_read.apply_async(
+                                read_partition,
+                                args=(
+                                    files_in_read,
+                                    files_read,
+                                    files_in_read_lock,
+                                    files_read_lock,
+                                    partition_name,
+                                    file_data['file_name'],
+                                    file_data['start_index'],
+                                    file_data['end_index'],
+                                    intermediate_bucket,
+                                    minio_ip,
+                                    experiment_number,
+                                    scheduled_files_statuses
+                                )
+                            )
+            # for part_name in partitions_names:
+            #     if (
+            #             files_read.get(part_name) is not None and
+            #             len(files_read[part_name]) == len(partitions[part_name]) and
+            #             files_sorted.get(part_name) is None
+            #     ):
+            #         pool_sort.apply_async(
+            #             sort_category,
+            #             args=(
+            #                 files_read,
+            #                 files_sorted,
+            #                 part_name,
+            #                 len(partitions[part_name]),
+            #                 experiment_number
+            #             )
+            #         )
+            #
+            #     if files_sorted.get(part_name) is not None and files_written.get(part_name) is None:
+            #         pool_write.apply_async(
+            #             write_category,
+            #             args=(
+            #                 files_written,
+            #                 files_sorted,
+            #                 part_name,
+            #                 write_bucket,
+            #                 minio_ip,
+            #                 experiment_number
+            #             )
+            #         )
     logger.info("========FINISH STAGE 2===========")
     minio_client = Minio(
         f"{minio_ip}:9000",
