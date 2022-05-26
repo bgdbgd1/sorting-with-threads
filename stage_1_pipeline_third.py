@@ -54,11 +54,12 @@ def read_file(
         buf.write(file_content)
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
         files_read_counter.value += 1
-        read_buffers.value += 1
+        # read_buffers.value += 1
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     except:
         scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
+        read_buffers.value -= 1
 
 
 def determine_categories(
@@ -158,6 +159,8 @@ def determine_categories(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
     except Exception:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_READ'})
+        det_buffers.value -= 1
+
 
 def write_file(
         file_name,
@@ -261,6 +264,7 @@ def execute_stage_1_pipeline(
                         read_buffers.value < max_read_buffers_filled
                 ):
                     scheduled_files_statuses[file] = 'SCHEDULED_READ'
+                    read_buffers.value += 1
                     pool_read.apply_async(
                         read_file,
                         args=(
@@ -282,6 +286,7 @@ def execute_stage_1_pipeline(
                         det_buffers.value < max_det_cat_buffers_filled
                 ):
                     scheduled_files_statuses[file] = 'SCHEDULED_DET_CAT'
+                    det_buffers.value += 1
                     pool_determine_categories.apply_async(
                         determine_categories,
                         args=(
