@@ -185,14 +185,14 @@ def execute_stage_2_pipeline(
     partitions_names = [partition_name for partition_name, partition_data in partitions.items()]
     with mp.Manager() as manager:
         files_in_read = manager.dict()
-        scheduled_files_statuses = manager.dict()
-        for partition_name, partition_data in partitions.items():
-            scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
+        # scheduled_files_statuses = manager.dict()
+        scheduled_files_statuses = manager.dict({partition_name: {file_data['file_name']: "NOT_SCHEDULED" for file_data in partition_data} for partition_name, partition_data in partitions.items()})
+        # for partition_name, partition_data in partitions.items():
+        #     scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
         files_read = manager.dict()
         files_sorted = manager.dict()
         files_in_read_lock = manager.Lock()
         files_read_lock = manager.Lock()
-        buffers_filled = manager.Value('buffers_filled', 0)
         files_written = manager.dict()
         while len(files_written) < len(partitions_names):
             for partition_name, partition_data in partitions.items():
@@ -229,18 +229,23 @@ def execute_stage_2_pipeline(
                 elif files_written.get(partition_name) is not None:
                     continue
                 else:
-                    partition_data_in_read = None
-                    with files_in_read_lock:
-                        partition_data_in_read = files_in_read.get(partition_name)
-                    if not partition_data_in_read:
+                    # with files_in_read_lock:
+                    #     partition_data_in_read = files_in_read.get(partition_name)
+                    if not files_in_read.get(partition_name):
                         files_in_read.update({partition_name: []})
                     for file_data in partition_data:
-                        is_ok_to_read = False
-                        with files_in_read_lock:
-                            is_ok_to_read = (file_data['file_name'] not in files_in_read[partition_name])
-                        if is_ok_to_read and scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED':
-                            scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
-                            files_in_read[partition_name].append(file_data['file_name'])
+                        if (
+                                file_data['file_name'] not in files_in_read[partition_name] and
+                                scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED'
+                        ):
+                            temp_sched = scheduled_files_statuses[partition_name]
+                            temp_sched.update({file_data['file_name']: 'SCHEDULED'})
+                            scheduled_files_statuses.update({partition_name: temp_sched})
+                            # scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
+                            temp_files_in_read = files_in_read[partition_name]
+                            temp_files_in_read.append(file_data['file_name'])
+                            files_in_read.update({partition_name: temp_files_in_read})
+                            # files_in_read[partition_name].append(file_data['file_name'])
                             pool_read.apply_async(
                                 read_partition,
                                 args=(
