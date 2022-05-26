@@ -8,7 +8,8 @@ from stage_2_no_pipeline import execute_stage_2_no_pipeline
 # from stage_1_pipeline_second import execute_stage_1_pipeline
 # from stage_2_pipeline_second import execute_stage_2_pipeline
 from stage_1_pipeline_third import execute_stage_1_pipeline
-from stage_2_pipeline_third import execute_stage_2_pipeline
+# from stage_2_pipeline_third import execute_stage_2_pipeline
+from stage_2_pipeline_reverted import execute_stage_2_pipeline
 
 from constants import SERVER_NUMBER
 app = Flask(__name__)
