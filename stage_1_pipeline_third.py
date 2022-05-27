@@ -343,6 +343,7 @@ def execute_stage_1_pipeline(
                 print(f'==============SCHEDULED Key: {key}  Value: {val} ==============')
             for key, val in files_read.items():
                 print(f'==============FILES READ Key: {key}  Value: {val} ==============')
+            print(f'written files: {written_files.value}')
         pool_read.close()
         pool_write.close()
         pool_determine_categories.close()
