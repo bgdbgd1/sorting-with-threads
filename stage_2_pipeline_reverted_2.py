@@ -186,10 +186,10 @@ def execute_stage_2_pipeline(
     partitions_names = [partition_name for partition_name, partition_data in partitions.items()]
     with mp.Manager() as manager:
         files_in_read = manager.dict()
-        # scheduled_files_statuses = manager.dict()
-        scheduled_files_statuses = manager.dict({partition_name: {file_data['file_name']: "NOT_SCHEDULED" for file_data in partition_data} for partition_name, partition_data in partitions.items()})
-        # for partition_name, partition_data in partitions.items():
-        #     scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
+        scheduled_files_statuses = manager.dict()
+        # scheduled_files_statuses = manager.dict({partition_name: {file_data['file_name']: "NOT_SCHEDULED" for file_data in partition_data} for partition_name, partition_data in partitions.items()})
+        for partition_name, partition_data in partitions.items():
+            scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
         files_read = manager.dict()
         files_sorted = manager.dict()
         files_in_read_lock = manager.Lock()
@@ -243,14 +243,14 @@ def execute_stage_2_pipeline(
                                 is_ok_to_read and
                                 scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED'
                         ):
-                            temp_sched = scheduled_files_statuses[partition_name]
-                            temp_sched.update({file_data['file_name']: 'SCHEDULED'})
-                            scheduled_files_statuses.update({partition_name: temp_sched})
-                            # scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
-                            temp_files_in_read = files_in_read[partition_name]
-                            temp_files_in_read.append(file_data['file_name'])
-                            files_in_read.update({partition_name: temp_files_in_read})
-                            # files_in_read[partition_name].append(file_data['file_name'])
+                            # temp_sched = scheduled_files_statuses[partition_name]
+                            # temp_sched.update({file_data['file_name']: 'SCHEDULED'})
+                            # scheduled_files_statuses.update({partition_name: temp_sched})
+                            scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
+                            # temp_files_in_read = files_in_read[partition_name]
+                            # temp_files_in_read.append(file_data['file_name'])
+                            # files_in_read.update({partition_name: temp_files_in_read})
+                            files_in_read[partition_name].append(file_data['file_name'])
                             pool_read.apply_async(
                                 read_partition,
                                 args=(
