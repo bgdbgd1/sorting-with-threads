@@ -63,6 +63,7 @@ def read_file(
         files_read_counter.value += 1
     except:
         scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
+        files_read.pop(file_name)
         # read_buffers.value -= 1
         print("============================ EXCEPTION READ ============================")
 
