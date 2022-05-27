@@ -25,7 +25,7 @@ logger = get_logger(
     FILE_SIZE,
     CATEGORIES,
     'client_handler',
-    WITH_PIPELINE
+    'with_pipeline'
 )
 
 

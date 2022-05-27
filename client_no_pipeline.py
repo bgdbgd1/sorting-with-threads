@@ -23,7 +23,7 @@ logger = get_logger(
     FILE_SIZE,
     CATEGORIES,
     'client_handler',
-    WITH_PIPELINE
+    'no_pipeline'
 )
 NO_PIPELINE_THREADS = 24
 
