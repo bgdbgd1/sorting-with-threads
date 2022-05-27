@@ -8,7 +8,7 @@ import uuid
 
 from minio import Minio
 from custom_logger import get_logger
-from constants import FILE_NR, FILE_SIZE, CATEGORIES, WITH_PIPELINE
+from constants import FILE_NR, FILE_SIZE, CATEGORIES
 READING_THREADS_STAGE_1 = 8
 DET_CAT_THREADS_STAGE_1 = 8
 WRITING_THREADS_STAGE_1 = 8
@@ -208,4 +208,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 6):
-        run_sorting_experiment(i, '100', '100MB', '256', sys.argv[1:])
+        run_sorting_experiment(i, '100', '1GB', '256', sys.argv[1:])
