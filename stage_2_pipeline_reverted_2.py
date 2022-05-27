@@ -93,6 +93,7 @@ def read_partition(
     except Exception:
         scheduled_files_statuses[partition_name][file_name] = 'NOT_SCHEDULED'
 
+
 def sort_category(
         files_read,
         files_sorted,
