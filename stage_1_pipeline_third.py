@@ -64,6 +64,7 @@ def read_file(
     except:
         scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
         read_buffers.value -= 1
+        print("============================ EXCEPTION READ ============================")
 
 
 def determine_categories(
@@ -168,6 +169,7 @@ def determine_categories(
     except Exception:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_READ'})
         det_buffers.value -= 1
+        print("============================ EXCEPTION DETERMINE CATEGORY ============================")
 
 
 def write_file(
@@ -233,7 +235,9 @@ def write_file(
         read_buffers.value -= 1
         det_buffers.value -= 1
     except Exception:
-        scheduled_files_statuses[file_name] = 'SCHEDULED_DET_CAT'
+        scheduled_files_statuses.update({file_name: 'SCHEDULED_DET_CAT'})
+        print("============================ EXCEPTION WRITE ============================")
+        # scheduled_files_statuses[file_name] =
 
 
 def execute_stage_1_pipeline(
@@ -334,7 +338,9 @@ def execute_stage_1_pipeline(
                             det_buffers
                         )
                     )
-
+        pool_read.close()
+        pool_write.close()
+        pool_determine_categories.close()
         utfcontent = json.dumps(all_locations.values()).encode('utf-8')
         minio_client = Minio(
             f"{minio_ip}:9000",
