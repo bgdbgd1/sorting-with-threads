@@ -339,6 +339,10 @@ def execute_stage_1_pipeline(
                             det_buffers
                         )
                     )
+            for key, val in scheduled_files_statuses.items():
+                print(f'==============SCHEDULED Key: {key}  Value: {val} ==============')
+            for key, val in files_read.items():
+                print(f'==============FILES READ Key: {key}  Value: {val} ==============')
         pool_read.close()
         pool_write.close()
         pool_determine_categories.close()
