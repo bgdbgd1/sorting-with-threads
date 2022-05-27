@@ -230,13 +230,17 @@ def execute_stage_2_pipeline(
                 elif files_written.get(partition_name) is not None:
                     continue
                 else:
-                    # with files_in_read_lock:
-                    #     partition_data_in_read = files_in_read.get(partition_name)
-                    if not files_in_read.get(partition_name):
+                    partition_data_in_read = None
+                    with files_in_read_lock:
+                        partition_data_in_read = files_in_read.get(partition_name)
+                    if not partition_data_in_read:
                         files_in_read.update({partition_name: []})
                     for file_data in partition_data:
+                        is_ok_to_read = False
+                        with files_in_read_lock:
+                            is_ok_to_read = (file_data['file_name'] not in files_in_read[partition_name])
                         if (
-                                file_data['file_name'] not in files_in_read[partition_name] and
+                                is_ok_to_read and
                                 scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED'
                         ):
                             temp_sched = scheduled_files_statuses[partition_name]

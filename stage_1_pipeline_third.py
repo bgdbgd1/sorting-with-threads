@@ -96,14 +96,6 @@ def determine_categories(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
         print(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting determine categories {file_name}.')
-        files_read.update(
-            {
-                file_name: {
-                    'buffer': record_arr,
-                    'status': 'DETERMINED_CATEGORIES'
-                }
-            }
-        )
         logger.info(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started determine categories {file_name}.')
         print(
@@ -151,6 +143,14 @@ def determine_categories(
             'file_name': file_name
         }
         all_locations.update({file_name: locations})
+        files_read.update(
+            {
+                file_name: {
+                    'buffer': record_arr,
+                    'status': 'DETERMINED_CATEGORIES'
+                }
+            }
+        )
         logger.info(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
         print(
@@ -218,6 +218,7 @@ def write_file(
         det_buffers.value -= 1
     except Exception:
         scheduled_files_statuses[file_name] = 'SCHEDULED_DET_CAT'
+
 
 def execute_stage_1_pipeline(
         initial_files,
