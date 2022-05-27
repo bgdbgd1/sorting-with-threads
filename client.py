@@ -95,21 +95,21 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
 
     # # Send data to servers
-    # pool_requests = Pool(24)
-    # for ip, data in files_per_ip.items():
-    #     pool_requests.apply_async(
-    #         call_stage_1_pipeline,
-    #         args=(
-    #             ip,
-    #             data,
-    #             file_size,
-    #             nr_files,
-    #             intervals,
-    #             experiment_number
-    #         )
-    #     )
-    # pool_requests.close()
-    # pool_requests.join()
+    pool_requests = Pool(24)
+    for ip, data in files_per_ip.items():
+        pool_requests.apply_async(
+            call_stage_1_pipeline,
+            args=(
+                ip,
+                data,
+                file_size,
+                nr_files,
+                intervals,
+                experiment_number
+            )
+        )
+    pool_requests.close()
+    pool_requests.join()
     # Check if all servers finished STAGE 1
     file_found = False
     object_names = set()

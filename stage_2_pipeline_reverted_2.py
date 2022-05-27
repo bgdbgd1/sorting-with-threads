@@ -36,6 +36,8 @@ def read_partition(
         scheduled_files_statuses
 ):
     try:
+        process_uuid = uuid.uuid4()
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Start updating files_in_read {partition_name} from file {file_name}.")
         with files_in_read_lock:
             partition_data_in_read = files_in_read.get(partition_name)
             if partition_data_in_read and file_name in partition_data_in_read:
@@ -47,12 +49,8 @@ def read_partition(
                 files_in_read.update({partition_name: new_in_read})
             elif not partition_data_in_read:
                 files_in_read.update({partition_name: [file_name]})
-
-        # print(f'Reading partition {partition_name} from file {file_name}')
-
-        process_uuid = uuid.uuid4()
-        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
-        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finish updating files_in_read {partition_name} from file {file_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started initializing minio client partition {partition_name} from file {file_name}.")
 
         minio_client = Minio(
             f"{minio_ip}:9000",
@@ -60,6 +58,11 @@ def read_partition(
             secret_key="minioadmin",
             secure=False
         )
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished initializing minio client partition {partition_name} from file {file_name}.")
+
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
+
         file_content = minio_client.get_object(
             bucket_name=intermediate_bucket,
             object_name=file_name,
@@ -68,7 +71,7 @@ def read_partition(
         ).data
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
-
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_partition Start updating files_read {partition_name} from file {file_name}.")
         with files_read_lock:
             if not files_read.get(partition_name):
                 files_read.update(
@@ -90,6 +93,8 @@ def read_partition(
                     }
                 )
                 files_read.update({partition_name: new_files_read})
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_partition Finish updating files_read {partition_name} from file {file_name}.")
+
     except Exception:
         scheduled_files_statuses[partition_name][file_name] = 'NOT_SCHEDULED'
 
@@ -107,25 +112,26 @@ def sort_category(
     ):
         print("RETURNING from SORT CATEGORY")
     process_uuid = uuid.uuid4()
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting partition.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
 
     files_sorted.update({partition_name: 'Nothing'})
     buffer = io.BytesIO()
     file = files_read.get(partition_name)
-
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading buffers category {partition_name}.")
     for file_name, file_data in file.items():
         buffer.write(file_data['buffer'])
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading buffers category {partition_name}.")
+
     print("SORT")
 
     np_array = np.frombuffer(
         buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
     )
+    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
+    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
     np_array = np.sort(np_array, order='key')
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
     files_sorted.update({partition_name: np_array})
-    # print("FINISHED SORTING")
 
 
 def write_category(
@@ -186,7 +192,7 @@ def execute_stage_2_pipeline(
     partitions_names = [partition_name for partition_name, partition_data in partitions.items()]
     with mp.Manager() as manager:
         files_in_read = manager.dict()
-        scheduled_files_statuses = manager.dict()
+        scheduled_files_statuses = {}
         # scheduled_files_statuses = manager.dict({partition_name: {file_data['file_name']: "NOT_SCHEDULED" for file_data in partition_data} for partition_name, partition_data in partitions.items()})
         for partition_name, partition_data in partitions.items():
             scheduled_files_statuses[partition_name] = {file_data['file_name']: 'NOT_SCHEDULED' for file_data in partition_data }
@@ -243,13 +249,7 @@ def execute_stage_2_pipeline(
                                 is_ok_to_read and
                                 scheduled_files_statuses[partition_name][file_data['file_name']] == 'NOT_SCHEDULED'
                         ):
-                            # temp_sched = scheduled_files_statuses[partition_name]
-                            # temp_sched.update({file_data['file_name']: 'SCHEDULED'})
-                            # scheduled_files_statuses.update({partition_name: temp_sched})
                             scheduled_files_statuses[partition_name][file_data['file_name']] = 'SCHEDULED'
-                            # temp_files_in_read = files_in_read[partition_name]
-                            # temp_files_in_read.append(file_data['file_name'])
-                            # files_in_read.update({partition_name: temp_files_in_read})
                             files_in_read[partition_name].append(file_data['file_name'])
                             pool_read.apply_async(
                                 read_partition,
