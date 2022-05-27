@@ -63,7 +63,7 @@ def read_file(
         files_read_counter.value += 1
     except:
         scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
-        read_buffers.value -= 1
+        # read_buffers.value -= 1
         print("============================ EXCEPTION READ ============================")
 
 
@@ -168,7 +168,7 @@ def determine_categories(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
     except Exception:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_READ'})
-        det_buffers.value -= 1
+        # det_buffers.value -= 1
         print("============================ EXCEPTION DETERMINE CATEGORY ============================")
 
 
@@ -232,8 +232,8 @@ def write_file(
 
         written_files.value += 1
         buffers_filled.value -= 1
-        read_buffers.value -= 1
-        det_buffers.value -= 1
+        # read_buffers.value -= 1
+        # det_buffers.value -= 1
     except Exception:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_DET_CAT'})
         print("============================ EXCEPTION WRITE ============================")
@@ -279,11 +279,11 @@ def execute_stage_1_pipeline(
                 if (
                         not file_data and
                         files_read_counter.value < len(initial_files) and
-                        scheduled_files_statuses[file] == 'NOT_SCHEDULED' and
-                        read_buffers.value < max_read_buffers_filled
+                        scheduled_files_statuses[file] == 'NOT_SCHEDULED'
+                        # and read_buffers.value < max_read_buffers_filled
                 ):
                     scheduled_files_statuses[file] = 'SCHEDULED_READ'
-                    read_buffers.value += 1
+                    # read_buffers.value += 1
                     pool_read.apply_async(
                         read_file,
                         args=(
@@ -301,11 +301,11 @@ def execute_stage_1_pipeline(
                 if (
                         file_data and
                         file_data['status'] == 'READ' and
-                        scheduled_files_statuses[file] == 'SCHEDULED_READ' and
-                        det_buffers.value < max_det_cat_buffers_filled
+                        scheduled_files_statuses[file] == 'SCHEDULED_READ'
+                        # and det_buffers.value < max_det_cat_buffers_filled
                 ):
                     scheduled_files_statuses[file] = 'SCHEDULED_DET_CAT'
-                    det_buffers.value += 1
+                    # det_buffers.value += 1
                     pool_determine_categories.apply_async(
                         determine_categories,
                         args=(
