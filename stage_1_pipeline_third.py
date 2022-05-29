@@ -60,7 +60,7 @@ def read_file(
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_file Start updating files_read {file_name}.")
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_file Finish updating files_read {file_name}.")
-        files_read_counter.value += 1
+        # files_read_counter.value += 1
     except Exception as exc:
         scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
         files_read.pop(file_name)
@@ -199,6 +199,7 @@ def write_file(
         scheduled_files_statuses,
         read_buffers,
         det_buffers,
+        written_files_lock
 ):
     try:
         minio_client = Minio(
@@ -246,7 +247,8 @@ def write_file(
         )
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finish Start updating files_read written {file_name}.")
 
-        written_files.value += 1
+        with written_files_lock:
+            written_files.value += 1
         buffers_filled.value -= 1
         # read_buffers.value -= 1
         # det_buffers.value -= 1
@@ -289,6 +291,7 @@ def execute_stage_1_pipeline(
     with mp.Manager() as manager:
         files_read = manager.dict()
         scheduled_files_statuses = manager.dict()
+        written_files_lock = manager.Lock()
         for file_name in initial_files:
             scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
         files_read_counter = manager.Value('i', 0)
@@ -299,13 +302,13 @@ def execute_stage_1_pipeline(
         max_det_cat_buffers_filled = 15
         read_buffers = manager.Value('i', 0)
         det_buffers = manager.Value('i', 0)
-
-        while written_files.value < len(initial_files):
+        ok = False
+        while not ok:
             for file in initial_files:
                 file_data = files_read.get(file)
                 if (
                         not file_data and
-                        files_read_counter.value < len(initial_files) and
+                        # files_read_counter.value < len(initial_files) and
                         scheduled_files_statuses[file] == 'NOT_SCHEDULED'
                         # and read_buffers.value < max_read_buffers_filled
                 ):
@@ -362,9 +365,13 @@ def execute_stage_1_pipeline(
                             experiment_number,
                             scheduled_files_statuses,
                             read_buffers,
-                            det_buffers
+                            det_buffers,
+                            written_files_lock
                         )
                     )
+            with written_files_lock:
+                if written_files.value < len(initial_files):
+                    ok = True
             # for key, val in scheduled_files_statuses.items():
             #     print(f'==============SCHEDULED Key: {key}  Value: {val} ==============')
             # for key, val in files_read.items():
