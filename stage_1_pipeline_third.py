@@ -370,7 +370,7 @@ def execute_stage_1_pipeline(
                         )
                     )
             with written_files_lock:
-                if written_files.value < len(initial_files):
+                if written_files.value >= len(initial_files):
                     ok = True
             # for key, val in scheduled_files_statuses.items():
             #     print(f'==============SCHEDULED Key: {key}  Value: {val} ==============')
