@@ -61,13 +61,15 @@ def read_file(
         files_read.update({file_name: {'buffer': file_content, 'status': 'READ', 'length': len(buf.getbuffer())}})
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_file Finish updating files_read {file_name}.")
         files_read_counter.value += 1
-    except:
+    except Exception as exc:
         scheduled_files_statuses.update({file_name: 'NOT_SCHEDULED'})
         files_read.pop(file_name)
         # read_buffers.value -= 1
         print("============================ EXCEPTION READ ============================")
-        raise
+        print(exc)
+        logger.info(exc)
         exit()
+
 
 def determine_categories(
         file_name,
@@ -168,11 +170,21 @@ def determine_categories(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
         print(
             f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
-    except Exception:
+    except Exception as exc:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_READ'})
+        files_read.update(
+            {
+                file_name: {
+                    'buffer': files_read[file_name]['buffer'],
+                    'status': 'READ',
+                    'length': files_read[file_name]['length']
+                }
+            }
+        )
         # det_buffers.value -= 1
         print("============================ EXCEPTION DETERMINE CATEGORY ============================")
-        raise
+        print(exc)
+        logger.info(exc)
         exit()
 
 
@@ -238,10 +250,19 @@ def write_file(
         buffers_filled.value -= 1
         # read_buffers.value -= 1
         # det_buffers.value -= 1
-    except Exception:
+    except Exception as exc:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_DET_CAT'})
+        files_read.update(
+            {
+                file_name: {
+                    'buffer': files_read[file_name]['buffer'],
+                    'status': 'DETERMINED_CATEGORIES'
+                }
+            }
+        )
         print("============================ EXCEPTION WRITE ============================")
-        raise
+        print(exc)
+        logger.info(exc)
         exit()
         # scheduled_files_statuses[file_name] =
 
