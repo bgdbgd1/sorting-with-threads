@@ -66,7 +66,8 @@ def read_file(
         files_read.pop(file_name)
         # read_buffers.value -= 1
         print("============================ EXCEPTION READ ============================")
-
+        raise
+        exit()
 
 def determine_categories(
         file_name,
@@ -171,6 +172,8 @@ def determine_categories(
         scheduled_files_statuses.update({file_name: 'SCHEDULED_READ'})
         # det_buffers.value -= 1
         print("============================ EXCEPTION DETERMINE CATEGORY ============================")
+        raise
+        exit()
 
 
 def write_file(
@@ -238,6 +241,8 @@ def write_file(
     except Exception:
         scheduled_files_statuses.update({file_name: 'SCHEDULED_DET_CAT'})
         print("============================ EXCEPTION WRITE ============================")
+        raise
+        exit()
         # scheduled_files_statuses[file_name] =
 
 
@@ -339,11 +344,11 @@ def execute_stage_1_pipeline(
                             det_buffers
                         )
                     )
-            for key, val in scheduled_files_statuses.items():
-                print(f'==============SCHEDULED Key: {key}  Value: {val} ==============')
-            for key, val in files_read.items():
-                print(f'==============FILES READ Key: {key}  Value: {val} ==============')
-            print(f'written files: {written_files.value}')
+            # for key, val in scheduled_files_statuses.items():
+            #     print(f'==============SCHEDULED Key: {key}  Value: {val} ==============')
+            # for key, val in files_read.items():
+            #     print(f'==============FILES READ Key: {key}  Value: {val} ==============')
+            # print(f'written files: {written_files.value}')
         pool_read.close()
         pool_write.close()
         pool_determine_categories.close()
