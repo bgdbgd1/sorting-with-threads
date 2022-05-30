@@ -25,7 +25,7 @@ def read_partition(
         files_in_read,
         files_read,
         # files_in_read_lock,
-        # files_read_lock,
+        files_read_lock,
         partition_name,
         file_name,
         start_index,
@@ -72,27 +72,27 @@ def read_partition(
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_partition Start updating files_read {partition_name} from file {file_name}.")
-        # with files_read_lock:
-        if not files_read.get(partition_name):
-            files_read.update(
-                {
-                    partition_name: {
+        with files_read_lock:
+            if not files_read.get(partition_name):
+                files_read.update(
+                    {
+                        partition_name: {
+                            file_name: {
+                                'buffer': file_content
+                            }
+                        }
+                    }
+                )
+            else:
+                new_files_read = files_read[partition_name]
+                new_files_read.update(
+                    {
                         file_name: {
                             'buffer': file_content
                         }
                     }
-                }
-            )
-        else:
-            new_files_read = files_read[partition_name]
-            new_files_read.update(
-                {
-                    file_name: {
-                        'buffer': file_content
-                    }
-                }
-            )
-            files_read.update({partition_name: new_files_read})
+                )
+                files_read.update({partition_name: new_files_read})
         logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; read_partition Finish updating files_read {partition_name} from file {file_name}.")
 
     except Exception:
@@ -257,7 +257,7 @@ def execute_stage_2_pipeline(
                                     files_in_read,
                                     files_read,
                                     # files_in_read_lock,
-                                    # files_read_lock,
+                                    files_read_lock,
                                     partition_name,
                                     file_data['file_name'],
                                     file_data['start_index'],
