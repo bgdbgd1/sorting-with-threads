@@ -5,11 +5,8 @@ from flask import Flask, request
 
 from stage_1_no_pipeline import execute_stage_1_no_pipeline
 from stage_2_no_pipeline import execute_stage_2_no_pipeline
-# from stage_1_pipeline_second import execute_stage_1_pipeline
-# from stage_2_pipeline_second import execute_stage_2_pipeline
-from stage_1_pipeline_third import execute_stage_1_pipeline
-# from stage_2_pipeline_third import execute_stage_2_pipeline
-from stage_2_pipeline_reverted_2 import execute_stage_2_pipeline
+from stage_1_pipeline import execute_stage_1_pipeline
+from stage_2_pipeline import execute_stage_2_pipeline
 
 from constants import SERVER_NUMBER
 app = Flask(__name__)
