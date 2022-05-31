@@ -10,7 +10,7 @@ import numpy as np
 from minio import Minio
 
 from custom_logger import get_logger
-from constants import SERVER_NUMBER, FILE_NR, FILE_SIZE, CATEGORIES
+from constants import SERVER_NUMBER, FILE_NR, FILE_SIZE, CATEGORIES, PREFIX
 
 logger = get_logger(
     'stage_1',
@@ -43,9 +43,9 @@ def read_file(
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading file {file_name}.")
 
     file_content = minio_client.get_object(read_bucket, file_name).data
-    with open(f'stage_1/server_{SERVER_NUMBER}/read/{file_name}', 'wb') as file_read:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/read/{file_name}', 'wb') as file_read:
         file_read.write(file_content)
-    with open(f'stage_1/server_{SERVER_NUMBER}/read_finished/{file_name}', 'w+') as file_read:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/read_finished/{file_name}', 'w+') as file_read:
         file_read.write('ok')
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading file {file_name}.")
@@ -57,7 +57,7 @@ def determine_categories(
 ):
     process_uuid = uuid.uuid4()
     buf = io.BytesIO()
-    with open(f'stage_1/server_{SERVER_NUMBER}/read/{file_name}', 'rb') as file_content:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/read/{file_name}', 'rb') as file_content:
         buf.write(file_content.read())
     # buf.write(file_info['buffer'])
     np_buffer = np.frombuffer(buf.getbuffer(), dtype=np.dtype([('key', 'V2'), ('rest', 'V98')]))
@@ -66,7 +66,7 @@ def determine_categories(
     print(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting determine categories {file_name}.')
     record_arr = np.sort(np_buffer, order='key')
-    with open(f'stage_1/server_{SERVER_NUMBER}/sorted/{file_name}', 'w') as det_cat_file:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted/{file_name}', 'w') as det_cat_file:
         record_arr.tofile(det_cat_file)
     # TODO: REMOVE READ FILE
     logger.info(
@@ -119,7 +119,7 @@ def determine_categories(
         'end_index': nr_elements,
         'file_name': file_name
     }
-    with open(f'stage_1/server_{SERVER_NUMBER}/sorted_finished/{file_name}', 'w') as write_locations:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted_finished/{file_name}', 'w') as write_locations:
         json.dump(locations, write_locations)
     # all_locations.update({file_name: locations})
 
@@ -142,7 +142,7 @@ def write_file(
         secure=False
     )
     process_uuid = uuid.uuid4()
-    with open(f'stage_1/server_{SERVER_NUMBER}/sorted/{file_name}', 'rb') as file:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted/{file_name}', 'rb') as file:
         file_content = file.read()
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing file {file_name}.')
@@ -151,9 +151,9 @@ def write_file(
         intermediate_bucket,
         file_name,
         io.BytesIO(file_content),
-        length=os.path.getsize(f'stage_1/server_{SERVER_NUMBER}/sorted/{file_name}')
+        length=os.path.getsize(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted/{file_name}')
     )
-    with open(f'stage_1/server_{SERVER_NUMBER}/written/{file_name}', 'w') as file_written:
+    with open(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/written/{file_name}', 'w') as file_written:
         file_written.write('ok')
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
@@ -197,7 +197,7 @@ def execute_stage_1_pipeline(
     finished_read = []
     finished_sorted = []
     while not ok:
-        read_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/read_finished/*')
+        read_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/read_finished/*')
         for file_read in read_files:
             name_file = file_read.split('/')[-1]
             if name_file not in finished_read:
@@ -210,7 +210,7 @@ def execute_stage_1_pipeline(
                 #         experiment_number
                 #     )
                 # )
-        determined_cat_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
+        determined_cat_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
         for file_read in determined_cat_files:
             name_file = file_read.split('/')[-1]
             if name_file not in finished_sorted:
@@ -226,7 +226,7 @@ def execute_stage_1_pipeline(
                 #     )
                 # )
 
-        written_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/written/*')
+        written_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/written/*')
         if len(initial_files) == len(written_files):
             ok = True
 
@@ -234,7 +234,7 @@ def execute_stage_1_pipeline(
     # pool_write.close()
     # pool_determine_categories.close()
     all_locations = {}
-    determined_cat_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
+    determined_cat_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
     try:
         for file_read in determined_cat_files:
             with open(file_read, 'r') as locations_content:
@@ -257,18 +257,18 @@ def execute_stage_1_pipeline(
     )
 
     # CLEANUP
-    read_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/read/*')
+    read_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/read/*')
     for file in read_files:
         os.remove(file)
-    det_cat_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/sorted/*')
+    det_cat_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted/*')
     for file in det_cat_files:
         os.remove(file)
-    read_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/read_finished/*')
+    read_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/read_finished/*')
     for file in read_files:
         os.remove(file)
-    det_cat_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
+    det_cat_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
     for file in det_cat_files:
         os.remove(file)
-    written_files = glob.glob(f'stage_1/server_{SERVER_NUMBER}/written/*')
+    written_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/written/*')
     for file in written_files:
         os.remove(file)

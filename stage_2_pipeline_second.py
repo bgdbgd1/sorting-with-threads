@@ -9,7 +9,7 @@ import numpy as np
 from minio import Minio
 
 from custom_logger import get_logger
-from constants import SERVER_NUMBER, FILE_NR, FILE_SIZE, CATEGORIES
+from constants import SERVER_NUMBER, FILE_NR, FILE_SIZE, CATEGORIES, PREFIX
 
 max_buffers_filled = 100
 logger = get_logger(
@@ -51,14 +51,14 @@ def read_partition(
     ).data
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
-    if not os.path.isdir(f'stage_2/server_{SERVER_NUMBER}/read/{partition_name}'):
-        os.mkdir(f'stage_2/server_{SERVER_NUMBER}/read/{partition_name}')
-    with open(f'stage_2/server_{SERVER_NUMBER}/read/{partition_name}/{file_name}', 'wb') as partition_file:
+    if not os.path.isdir(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read/{partition_name}'):
+        os.mkdir(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read/{partition_name}')
+    with open(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read/{partition_name}/{file_name}', 'wb') as partition_file:
         partition_file.write(file_content)
 
-    if not os.path.isdir(f'stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}'):
-        os.mkdir(f'stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}')
-    with open(f'stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}/{file_name}', 'wb') as partition_file:
+    if not os.path.isdir(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}'):
+        os.mkdir(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}')
+    with open(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}/{file_name}', 'wb') as partition_file:
         partition_file.write(file_content)
 
 
@@ -69,7 +69,7 @@ def sort_category(
     process_uuid = uuid.uuid4()
     buffer = io.BytesIO()
 
-    partition_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/read/{partition_name}/*')
+    partition_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read/{partition_name}/*')
     for file in partition_files:
         with open(file, 'rb') as file_content:
             buffer.write(file_content.read())
@@ -82,9 +82,9 @@ def sort_category(
     np_array = np.sort(np_array, order='key')
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
-    with open(f'stage_2/server_{SERVER_NUMBER}/sorted/{partition_name}', 'wb') as sorted_file:
+    with open(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted/{partition_name}', 'wb') as sorted_file:
         np_array.tofile(sorted_file)
-    with open(f'stage_2/server_{SERVER_NUMBER}/sorted_finished/{partition_name}', 'w') as sorted_finished_file:
+    with open(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted_finished/{partition_name}', 'w') as sorted_finished_file:
         sorted_finished_file.write('ok')
     # TODO: Remove read partition directory
 
@@ -102,17 +102,17 @@ def write_category(
         secret_key="minioadmin",
         secure=False
     )
-    with open(f'stage_2/server_{SERVER_NUMBER}/sorted/{category_name}', 'rb') as file:
+    with open(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted/{category_name}', 'rb') as file:
         file_content = file.read()
 
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
     minio_client.put_object(
-        write_bucket, category_name, io.BytesIO(file_content), length=os.path.getsize(f'stage_2/server_{SERVER_NUMBER}/sorted/{category_name}')
+        write_bucket, category_name, io.BytesIO(file_content), length=os.path.getsize(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted/{category_name}')
     )
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
-    with open(f'stage_2/server_{SERVER_NUMBER}/written/{category_name}', 'w') as file_written:
+    with open(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/written/{category_name}', 'w') as file_written:
         file_written.write('ok')
     # TODO: remove sorted file
 
@@ -167,7 +167,7 @@ def execute_stage_2_pipeline(
     ok = False
     while not ok:
         for partition_name in partitions:
-            partition_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}/*')
+            partition_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read_finished/{partition_name}/*')
 
             if partition_name not in partitions_read and len(partition_files) == len(partitions[partition_name]):
                 partitions_read.append(partition_name)
@@ -187,7 +187,7 @@ def execute_stage_2_pipeline(
                 print("PARTITION NOT IN PARTITIONS_READ")
             if len(partition_files) != len(partitions[partition_name]):
                 print("LENGTH DOES NOT MATCH")
-        partition_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
+        partition_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
         for file in partition_files:
             name_file = file.split('/')[-1]
             if name_file not in partitions_sorted:
@@ -207,7 +207,7 @@ def execute_stage_2_pipeline(
                 #     minio_ip,
                 #     experiment_number
                 # )
-        written_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/written/*')
+        written_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/written/*')
         if len(written_files) == len(partitions):
             ok = True
 
@@ -223,18 +223,18 @@ def execute_stage_2_pipeline(
         f'results_stage2_experiment_{experiment_number}_nr_files_{files_nr}_file_size_{files_size}_intervals_{categories}_{process_uuid}.json',
         io.BytesIO(b'done'), length=4)
 
-    read_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/read/*')
+    read_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read/*')
     for file in read_files:
         os.remove(file)
-    det_cat_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/sorted/*')
+    det_cat_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted/*')
     for file in det_cat_files:
         os.remove(file)
-    read_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/read_finished/*')
+    read_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/read_finished/*')
     for file in read_files:
         os.remove(file)
-    det_cat_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
+    det_cat_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
     for file in det_cat_files:
         os.remove(file)
-    written_files = glob.glob(f'stage_2/server_{SERVER_NUMBER}/written/*')
+    written_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/written/*')
     for file in written_files:
         os.remove(file)

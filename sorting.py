@@ -188,7 +188,7 @@ def sorting_stage2_no_pipeline():
     return "Sorting"
 
 def create_local_storage_dirs():
-    stages = ['stage_1', 'stage_2']
+    stages = ['/local/bee700/stage_1', '/local/bee700/stage_2']
     for stage in stages:
         if not os.path.isdir(stage):
             os.mkdir(stage)
