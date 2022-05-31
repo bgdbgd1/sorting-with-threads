@@ -182,16 +182,16 @@ def execute_stage_1_pipeline(
     pool_determine_categories = mp.Pool(nr_det_cat_processes)
     pool_write = mp.Pool(nr_write_processes)
     for file in initial_files:
-        read_file(file, minio_ip, read_bucket, experiment_number)
-        # pool_read.apply_async(
-        #     read_file,
-        #     args=(
-        #         file,
-        #         minio_ip,
-        #         read_bucket,
-        #         experiment_number
-        #     )
-        # )
+        # read_file(file, minio_ip, read_bucket, experiment_number)
+        pool_read.apply_async(
+            read_file,
+            args=(
+                file,
+                minio_ip,
+                read_bucket,
+                experiment_number
+            )
+        )
 
     ok = False
     finished_read = []
@@ -202,29 +202,29 @@ def execute_stage_1_pipeline(
             name_file = file_read.split('/')[-1]
             if name_file not in finished_read:
                 finished_read.append(name_file)
-                determine_categories(name_file, experiment_number)
-                # pool_determine_categories.apply_async(
-                #     determine_categories,
-                #     args=(
-                #         name_file,
-                #         experiment_number
-                #     )
-                # )
+                # determine_categories(name_file, experiment_number)
+                pool_determine_categories.apply_async(
+                    determine_categories,
+                    args=(
+                        name_file,
+                        experiment_number
+                    )
+                )
         determined_cat_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/sorted_finished/*')
         for file_read in determined_cat_files:
             name_file = file_read.split('/')[-1]
             if name_file not in finished_sorted:
                 finished_sorted.append(name_file)
-                write_file(name_file, intermediate_bucket, minio_ip, experiment_number)
-                # pool_write.apply_async(
-                #     write_file,
-                #     args=(
-                #         name_file,
-                #         intermediate_bucket,
-                #         minio_ip,
-                #         experiment_number
-                #     )
-                # )
+                # write_file(name_file, intermediate_bucket, minio_ip, experiment_number)
+                pool_write.apply_async(
+                    write_file,
+                    args=(
+                        name_file,
+                        intermediate_bucket,
+                        minio_ip,
+                        experiment_number
+                    )
+                )
 
         written_files = glob.glob(f'{PREFIX}/stage_1/server_{SERVER_NUMBER}/written/*')
         if len(initial_files) == len(written_files):
