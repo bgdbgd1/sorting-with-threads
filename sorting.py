@@ -1,12 +1,15 @@
 import json
+import os
 import sys
 
 from flask import Flask, request
 
 from stage_1_no_pipeline import execute_stage_1_no_pipeline
 from stage_2_no_pipeline import execute_stage_2_no_pipeline
-from stage_1_pipeline import execute_stage_1_pipeline
-from stage_2_pipeline import execute_stage_2_pipeline
+# from stage_1_pipeline import execute_stage_1_pipeline
+# from stage_2_pipeline import execute_stage_2_pipeline
+from stage_1_pipeline_second import execute_stage_1_pipeline
+from stage_2_pipeline_second import execute_stage_2_pipeline
 
 from constants import SERVER_NUMBER
 app = Flask(__name__)
@@ -184,17 +187,41 @@ def sorting_stage2_no_pipeline():
     )
     return "Sorting"
 
+def create_local_storage_dirs():
+    stages = ['stage_1', 'stage_2']
+    for stage in stages:
+        if not os.path.isdir(stage):
+            os.mkdir(stage)
+        if not os.path.isdir(f'{stage}/server_{SERVER_NUMBER}'):
+            os.mkdir(f'{stage}/server_{SERVER_NUMBER}')
+
+        if not os.path.isdir(f'{stage}/server_{SERVER_NUMBER}/read'):
+            os.mkdir(f'{stage}/server_{SERVER_NUMBER}/read')
+        if not os.path.isdir(f'{stage}/server_{SERVER_NUMBER}/read_finished'):
+            os.mkdir(f'{stage}/server_{SERVER_NUMBER}/read_finished')
+
+        if not os.path.isdir(f'{stage}/server_{SERVER_NUMBER}/sorted'):
+            os.mkdir(f'{stage}/server_{SERVER_NUMBER}/sorted')
+        if not os.path.isdir(f'{stage}/server_{SERVER_NUMBER}/sorted_finished'):
+            os.mkdir(f'{stage}/server_{SERVER_NUMBER}/sorted_finished')
+
+        if not os.path.isdir(f'{stage}/server_{SERVER_NUMBER}/written'):
+            os.mkdir(f'{stage}/server_{SERVER_NUMBER}/written')
+
 
 if __name__ == '__main__':
+    create_local_storage_dirs()
+
     # e.g. python sorting.py 127.0.0.1 1
     port = '5000'
-    minio_ip = f'10.149.0.{sys.argv[1]}'
-    serv_nr = sys.argv[2]
+    # minio_ip = f'10.149.0.{sys.argv[1]}'
+    # serv_nr = sys.argv[2]
 
-    if len(sys.argv) == 4:
-        port = sys.argv[3]
-    app.run(host=f'10.149.0.{serv_nr}', port=int(port))
+    # if len(sys.argv) == 4:
+    #     port = sys.argv[3]
+    # app.run(host=f'10.149.0.{serv_nr}', port=int(port))
 
     # Local settings
-    # minio_ip = '127.0.0.1'
-    # app.run(host='0.0.0.0', port=5000)
+    minio_ip = '127.0.0.1'
+    app.run(host='0.0.0.0', port=5000)
+

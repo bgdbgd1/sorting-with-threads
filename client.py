@@ -136,8 +136,10 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
     for result_stage1 in object_names:
         content = json.loads(minio_client.get_object(bucket_name=results_bucket, object_name=result_stage1).data.decode())
-        for file_data in content:
-            data_from_stage_1.update(file_data)
+        data_from_stage_1.update(content)
+        # for file_name, file_data in content.items():
+        # for file_data in content:
+        #     data_from_stage_1.update(file_data)
 
     for file, file_data in data_from_stage_1.items():
         for file_partition, positions in file_data.items():
@@ -210,5 +212,5 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
 if __name__ == '__main__':
     print(sys.argv)
-    for i in range(1, 5):
-        run_sorting_experiment(i, '100', '100MB', '256', sys.argv[1:])
+    for i in range(1, 2):
+        run_sorting_experiment(i, '10', '10MB', '256', sys.argv[1:])
