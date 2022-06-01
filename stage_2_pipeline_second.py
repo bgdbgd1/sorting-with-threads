@@ -183,10 +183,10 @@ def execute_stage_2_pipeline(
                     )
                 )
 
-            if partition_name not in partitions_read:
-                print("PARTITION NOT IN PARTITIONS_READ")
-            if len(partition_files) != len(partitions[partition_name]):
-                print("LENGTH DOES NOT MATCH")
+            # if partition_name not in partitions_read:
+            #     print("PARTITION NOT IN PARTITIONS_READ")
+            # if len(partition_files) != len(partitions[partition_name]):
+            #     print("LENGTH DOES NOT MATCH")
         partition_files = glob.glob(f'{PREFIX}/stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
         for file in partition_files:
             name_file = file.split('/')[-1]
