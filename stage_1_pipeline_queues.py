@@ -114,8 +114,6 @@ def determine_categories(
         'end_index': nr_elements,
         'file_name': file_name
     }
-    with open(f'{PREFIX}stage_1/server_{SERVER_NUMBER}/sorted_finished/{file_name}', 'w') as write_locations:
-        json.dump(locations, write_locations)
 
     logger.info(
         f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished determine categories {file_name}.')
@@ -266,8 +264,7 @@ def execute_stage_1_pipeline(
     queue_determine_categories.close()
     queue_determine_categories.join_thread()
 
-    queue_locations.close()
-    queue_locations.join_thread()
+
 
     queue_write.close()
     queue_write.join_thread()
@@ -278,7 +275,8 @@ def execute_stage_1_pipeline(
     all_locations = {}
     for i in range(len(initial_files)):
         all_locations.update(queue_locations.get())
-
+    queue_locations.close()
+    queue_locations.join_thread()
     utfcontent = json.dumps(all_locations).encode('utf-8')
     minio_client = Minio(
         f"{minio_ip}:9000",

@@ -64,33 +64,40 @@ def read_partition(
             partition_file.write(file_content)
     except Exception as exc:
         print(exc)
+        print("!!!!!!!!!!!!!!!!!!!! EXCEPTION IN READING!!!!!!!!!!!!!!!!!!!!")
+
         raise
+
 
 def sort_category(
         partition_name,
         experiment_number
 ):
-    process_uuid = uuid.uuid4()
-    buffer = io.BytesIO()
+    try:
+        process_uuid = uuid.uuid4()
+        buffer = io.BytesIO()
 
-    partition_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/read/{partition_name}/*')
-    for file in partition_files:
-        with open(file, 'rb') as file_content:
-            buffer.write(file_content.read())
-    print("SORT")
-    np_array = np.frombuffer(
-        buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
-    )
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
-    np_array = np.sort(np_array, order='key')
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
-    with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/{partition_name}', 'wb') as sorted_file:
-        np_array.tofile(sorted_file)
-    with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted_finished/{partition_name}', 'w') as sorted_finished_file:
-        sorted_finished_file.write('ok')
-    # TODO: Remove read partition directory
+        partition_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/read/{partition_name}/*')
+        for file in partition_files:
+            with open(file, 'rb') as file_content:
+                buffer.write(file_content.read())
+        print("SORT")
+        np_array = np.frombuffer(
+            buffer.getbuffer(), dtype=np.dtype([('sorted', 'V1'), ('key', 'V9'), ('value', 'V90')])
+        )
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started sorting category {partition_name}.")
+        np_array = np.sort(np_array, order='key')
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished sorting category {partition_name}.")
+        with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/{partition_name}', 'wb') as sorted_file:
+            np_array.tofile(sorted_file)
+        with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted_finished/{partition_name}', 'w') as sorted_finished_file:
+            sorted_finished_file.write('ok')
+    except Exception as exc:
+        print(exc)
+        print("!!!!!!!!!!!!!!!!!!!! EXCEPTION IN SORTING!!!!!!!!!!!!!!!!!!!!")
+        raise
 
 
 def write_category(
@@ -99,27 +106,30 @@ def write_category(
         minio_ip,
         experiment_number
 ):
-    process_uuid = uuid.uuid4()
-    minio_client = Minio(
-        f"{minio_ip}:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        secure=False
-    )
-    with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/{category_name}', 'rb') as file:
-        file_content = file.read()
+    try:
+        process_uuid = uuid.uuid4()
+        minio_client = Minio(
+            f"{minio_ip}:9000",
+            access_key="minioadmin",
+            secret_key="minioadmin",
+            secure=False
+        )
+        with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/{category_name}', 'rb') as file:
+            file_content = file.read()
 
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
-    minio_client.put_object(
-        write_bucket, category_name, io.BytesIO(file_content), length=os.path.getsize(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/{category_name}')
-    )
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
-    print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
-    with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/written/{category_name}', 'w') as file_written:
-        file_written.write('ok')
-    # TODO: remove sorted file
-
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started writing category {category_name}.")
+        minio_client.put_object(
+            write_bucket, category_name, io.BytesIO(file_content), length=os.path.getsize(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/{category_name}')
+        )
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing category {category_name}.")
+        with open(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/written/{category_name}', 'w') as file_written:
+            file_written.write('ok')
+    except Exception as exc:
+        print(Exception)
+        print("!!!!!!!!!!!!!!!!!!!! EXCEPTION IN WRITING!!!!!!!!!!!!!!!!!!!!")
+        raise
 
 def read_worker(
         queue_read,
@@ -220,10 +230,10 @@ def execute_stage_2_pipeline(
                     )
                 )
 
-            # if partition_name not in partitions_read:
-            #     print("PARTITION NOT IN PARTITIONS_READ")
-            # if len(partition_files) != len(partitions[partition_name]):
-            #     print("LENGTH DOES NOT MATCH")
+            if partition_name not in partitions_read:
+                print("PARTITION NOT IN PARTITIONS_READ")
+            if len(partition_files) != len(partitions[partition_name]):
+                print("LENGTH DOES NOT MATCH")
         partition_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
         for file in partition_files:
             name_file = file.split('/')[-1]
@@ -247,6 +257,9 @@ def execute_stage_2_pipeline(
         written_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/written/*')
         if len(written_files) == len(partitions):
             ok = True
+    for i in range(nr_reading_processes):
+        queue_read.put(None)
+
     queue_read.close()
     queue_read.join_thread()
 
@@ -277,17 +290,13 @@ def execute_stage_2_pipeline(
         # os.remove(file)
     det_cat_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted/*')
     for file in det_cat_files:
-        shutil.rmtree(file)
-        # os.remove(file)
+        os.remove(file)
     read_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/read_finished/*')
     for file in read_files:
         shutil.rmtree(file)
-        # os.remove(file)
     det_cat_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/sorted_finished/*')
     for file in det_cat_files:
-        shutil.rmtree(file)
-        # os.remove(file)
+        os.remove(file)
     written_files = glob.glob(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/written/*')
     for file in written_files:
-        shutil.rmtree(file)
-        # os.remove(file)
+        os.remove(file)
