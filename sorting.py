@@ -2,16 +2,18 @@ import json
 import os
 import sys
 
+
 from flask import Flask, request
 
 from stage_1_no_pipeline import execute_stage_1_no_pipeline
 from stage_2_no_pipeline import execute_stage_2_no_pipeline
-# from stage_1_pipeline import execute_stage_1_pipeline
+# from stage_1_pipeline_shared_manager import execute_stage_1_pipeline
 # from stage_2_pipeline import execute_stage_2_pipeline
-from stage_1_pipeline_second import execute_stage_1_pipeline
-from stage_2_pipeline_second import execute_stage_2_pipeline
+# from stage_1_pipeline_disk_files import execute_stage_1_pipeline
+from stage_1_pipeline_queues import execute_stage_1_pipeline
+from stage_2_pipeline_disk_files import execute_stage_2_pipeline
 
-from constants import SERVER_NUMBER
+from constants import SERVER_NUMBER, PREFIX
 app = Flask(__name__)
 minio_ip = ''
 
@@ -188,7 +190,7 @@ def sorting_stage2_no_pipeline():
     return "Sorting"
 
 def create_local_storage_dirs():
-    stages = ['/local/bee700/stage_1', '/local/bee700/stage_2']
+    stages = [f'{PREFIX}stage_2']
     for stage in stages:
         if not os.path.isdir(stage):
             os.mkdir(stage)
@@ -214,14 +216,14 @@ if __name__ == '__main__':
 
     # e.g. python sorting.py 127.0.0.1 1
     port = '5000'
-    minio_ip = f'10.149.0.{sys.argv[1]}'
-    serv_nr = sys.argv[2]
-
-    if len(sys.argv) == 4:
-        port = sys.argv[3]
-    app.run(host=f'10.149.0.{serv_nr}', port=int(port))
+    # minio_ip = f'10.149.0.{sys.argv[1]}'
+    # serv_nr = sys.argv[2]
+    #
+    # if len(sys.argv) == 4:
+    #     port = sys.argv[3]
+    # app.run(host=f'10.149.0.{serv_nr}', port=int(port))
 
     # Local settings
-    # minio_ip = '127.0.0.1'
-    # app.run(host='0.0.0.0', port=5000)
+    minio_ip = '127.0.0.1'
+    app.run(host='0.0.0.0', port=5000)
 
