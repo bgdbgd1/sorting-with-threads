@@ -264,8 +264,6 @@ def execute_stage_1_pipeline(
     queue_determine_categories.close()
     queue_determine_categories.join_thread()
 
-
-
     queue_write.close()
     queue_write.join_thread()
 
