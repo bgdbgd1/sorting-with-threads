@@ -40,8 +40,8 @@ def execute_all_methods(
     print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading category {partition_name}.")
 
     for data in partition_data:
-        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition file {data['file_name']} for category {partition_name}.")
-        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition file {data['file_name']} for category {partition_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {data['file_name']}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {data['file_name']}.")
 
         file_content = minio_client.get_object(
             bucket_name=intermediate_bucket,
@@ -49,8 +49,8 @@ def execute_all_methods(
             offset=data['start_index'] * 100,
             length=(data['end_index'] - data['start_index'] + 1) * 100
         ).data
-        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition file {data['file_name']} for category {partition_name}.")
-        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition file {data['file_name']} for category {partition_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {data['file_name']}.")
+        print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {data['file_name']}.")
 
         buffer.write(file_content)
     logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading category {partition_name}.")
