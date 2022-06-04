@@ -2,6 +2,8 @@ import glob
 import io
 import os
 import subprocess
+import sys
+
 from minio import Minio
 
 
@@ -44,5 +46,7 @@ def generate_data(files_dir, nr_files, num_records):
 
 
 if __name__ == '__main__':
-    generate_data('/local/bee700/minio_storage/read', 100, 1000000)
+    nr_files = sys.argv[1]
+    file_size = 10 * sys.argv[2] # 7 = 1GB ; 6 = 100MB
+    generate_data('/local/bee700/minio_storage/read', nr_files, file_size)
     # generate_data_with_minio('/local/bee700/minio_storage/read', 100, 10000000, '127.0.0.1', 'read')
