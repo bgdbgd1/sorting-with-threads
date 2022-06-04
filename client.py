@@ -14,9 +14,9 @@ READING_THREADS_STAGE_1 = 8
 DET_CAT_THREADS_STAGE_1 = 8
 WRITING_THREADS_STAGE_1 = 8
 
-READING_THREADS_STAGE_2 = 4
-SORT_THREADS_STAGE_2 = 5
-WRITING_THREADS_STAGE_2 = 5
+READING_THREADS_STAGE_2 = 20
+SORT_THREADS_STAGE_2 = 2
+WRITING_THREADS_STAGE_2 = 2
 
 logger = get_logger(
     'client_handler',
@@ -95,21 +95,21 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
 
     # # Send data to servers
-    # pool_requests = Pool(24)
-    # for ip, data in files_per_ip.items():
-    #     pool_requests.apply_async(
-    #         call_stage_1_pipeline,
-    #         args=(
-    #             ip,
-    #             data,
-    #             file_size,
-    #             nr_files,
-    #             intervals,
-    #             experiment_number
-    #         )
-    #     )
-    # pool_requests.close()
-    # pool_requests.join()
+    pool_requests = Pool(24)
+    for ip, data in files_per_ip.items():
+        pool_requests.apply_async(
+            call_stage_1_pipeline,
+            args=(
+                ip,
+                data,
+                file_size,
+                nr_files,
+                intervals,
+                experiment_number
+            )
+        )
+    pool_requests.close()
+    pool_requests.join()
     # Check if all servers finished STAGE 1
     file_found = False
     object_names = set()
@@ -212,5 +212,5 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
 if __name__ == '__main__':
     print(sys.argv)
-    for i in range(1, 2):
-        run_sorting_experiment(i, '16', '10MB', '256', sys.argv[1:])
+    for i in range(1, 11):
+        run_sorting_experiment(i, '100', '1GB', '256', sys.argv[1:])
