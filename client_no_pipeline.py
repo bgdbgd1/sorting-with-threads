@@ -39,9 +39,6 @@ def call_stage_1_no_pipeline(ip, data, file_size, nr_files, intervals, experimen
                 'intervals': intervals,
             },
             "experiment_number": experiment_number,
-            "reading_threads": READING_THREADS_STAGE_1,
-            "det_cat_threads": DET_CAT_THREADS_STAGE_1,
-            "writing_threads": WRITING_THREADS_STAGE_1,
             "no_pipeline_threads": NO_PIPELINE_THREADS
         }
     )
@@ -58,9 +55,6 @@ def call_stage_2_no_pipeline(ip, data, file_size, nr_files, intervals, experimen
                 'intervals': intervals,
             },
             "experiment_number": experiment_number,
-            "reading_threads": READING_THREADS_STAGE_2,
-            "sort_threads": SORT_THREADS_STAGE_2,
-            "writing_threads": WRITING_THREADS_STAGE_2,
             "no_pipeline_threads": NO_PIPELINE_THREADS
         }
     )
@@ -208,4 +202,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 11):
-        run_sorting_experiment(i, '100', '1GB', '256', sys.argv[1:])
+        run_sorting_experiment(i, '100', '1GB', '512', sys.argv[1:])
