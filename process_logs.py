@@ -21,28 +21,28 @@ phrases_stage_1 = threads_test = {
     'read_initial_files_tasks': [
         'Started reading file',
         'Finished reading file',
-        'Started initializing minio client file name',
-        'Finished initializing minio client file name',
-        'read_file Start updating files_read',
-        'read_file Finish updating files_read'
+        # 'Started initializing minio client file name',
+        # 'Finished initializing minio client file name',
+        # 'read_file Start updating files_read',
+        # 'read_file Finish updating files_read'
     ],
     'determine_categories_tasks': [
         'Started sorting determine categories',
         'Finished sorting determine categories',
         'Started determine categories',
         'Finished determine categories',
-        'det_cat Start updating files_read determining_categories',
-        'det_cat Finish updating files_read determining_categories',
-        'det_cat Start updating files_read determined_categories',
-        'det_cat Finish updating files_read determined_categories'
+        # 'det_cat Start updating files_read determining_categories',
+        # 'det_cat Finish updating files_read determining_categories',
+        # 'det_cat Start updating files_read determined_categories',
+        # 'det_cat Finish updating files_read determined_categories'
     ],
     'write_first_file_tasks': [
         'Started writing file',
         'Finished writing file',
-        'write_file Start updating files_read writing',
-        'write_file Finish updating files_read writing',
-        'write_file Start updating files_read written',
-        'write_file Finish updating files_read written'
+        # 'write_file Start updating files_read writing',
+        # 'write_file Finish updating files_read writing',
+        # 'write_file Start updating files_read written',
+        # 'write_file Finish updating files_read written'
     ]
 }
 
@@ -50,16 +50,16 @@ phrases_stage_2 = {
     'read_categories_tasks': [
         'Started reading category',
         'Finished reading category',
-        'Started reading partition file ',
-        'Finished reading partition file ',
+        # 'Started reading partition file ',
+        # 'Finished reading partition file ',
         'Started reading partition ',
         'Finished reading partition ',
-        'Start updating files_in_read',
-        'Finish updating files_in_read',
-        'Started initializing minio client partition',
-        'Finished initializing minio client partition',
-        'read_partition Start updating files_read',
-        'read_partition Finish updating files_read'
+        # 'Start updating files_in_read',
+        # 'Finish updating files_in_read',
+        # 'Started initializing minio client partition',
+        # 'Finished initializing minio client partition',
+        # 'read_partition Start updating files_read',
+        # 'read_partition Finish updating files_read'
     ],
     'sort_tasks': [
         'Started sorting category',
@@ -90,7 +90,7 @@ formatted_data = {}
 
 def format_line(stage_name, phrase, line, task_name):
     exception_phrases = False
-    if phrase == 'Started reading partition file ' or phrase == 'Finished reading partition file ':
+    if phrase == 'Started reading partition ' or phrase == 'Finished reading partition ':
         exception_phrases = True
         results = re.search(f'(.*) {stage_name} INFO experiment_number:(.*); uuid:(.*); {phrase}(.*).', line)
     else:
@@ -183,13 +183,13 @@ def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, t
         )
 
 
-def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
+def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads, nr_servers):
     # log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_eth4/*.log')
     # log_files = glob.glob(f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/*.log')
     if pipeline == 'no_pipeline':
-        log_files = glob.glob(f'logs_experiments/1GB-100files-no-pipeline-5-experiments-11-servers/logs_nr_files_100_file_size_1GB_intervals_256_no_pipeline/*.log')
+        log_files = glob.glob(f'logs_experiments/no-pipeline/{file_size}-{nr_files}files-NO-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/*.log')
     elif pipeline == 'with_pipeline':
-        log_files = glob.glob(f'logs_experiments/1GB-100files-with-pipeline-5-experiments-11-servers/logs_nr_files_100_file_size_1GB_intervals_256_with_pipeline/*.log')
+        log_files = glob.glob(f'logs_experiments/with-pipeline/{file_size}-{nr_files}files-WITH-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_with_pipeline/*.log')
 
     for experiment_log_file in log_files:
         try:
@@ -206,19 +206,19 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
                     for phrase in phrase_tasks:
                         if phrase in line:
                             format_line(stage_name, phrase, line, task_name)
-                for task_name, phrase_tasks in threads_test.items():
-                    for phrase in phrase_tasks:
-                        if phrase in line:
-                            format_line(stage_name, phrase, line, task_name)
+                # for task_name, phrase_tasks in threads_test.items():
+                #     for phrase in phrase_tasks:
+                #         if phrase in line:
+                #             format_line(stage_name, phrase, line, task_name)
                 for task_name, phrase_tasks in phrases_stage_2.items():
                     for phrase in phrase_tasks:
                         if phrase in line:
                             format_line(stage_name, phrase, line, task_name)
     # file_path = f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
     if pipeline == 'no_pipeline':
-        file_path = f'logs_experiments/1GB-100files-no-pipeline-5-experiments-11-servers/logs_nr_files_100_file_size_1GB_intervals_256_no_pipeline/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
+        file_path = f'logs_experiments/no-pipeline/{file_size}-{nr_files}files-NO-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
     elif pipeline == 'with_pipeline':
-        file_path = f'logs_experiments/1GB-100files-with-pipeline-5-experiments-11-servers/logs_nr_files_100_file_size_1GB_intervals_256_with_pipeline/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
+        file_path = f'logs_experiments/with-pipeline/{file_size}-{nr_files}files-with-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
 
     with open(file_path, 'w+') as results_file:
         json.dump(formatted_data, results_file)
@@ -226,4 +226,4 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads):
 
 if __name__ == '__main__':
     # process_logs('1000', '100MB', '256', pipeline='pipeline')
-    process_logs('100', '1GB', '256', pipeline='with_pipeline', nr_parallel_threads=24)
+    process_logs('100', '1GB', '512', pipeline='no_pipeline', nr_parallel_threads=24, nr_servers=11)
