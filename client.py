@@ -14,9 +14,9 @@ READING_THREADS_STAGE_1 = 6
 DET_CAT_THREADS_STAGE_1 = 12
 WRITING_THREADS_STAGE_1 = 6
 
-READING_THREADS_STAGE_2 = 12
-SORT_THREADS_STAGE_2 = 6
-WRITING_THREADS_STAGE_2 = 6
+READING_THREADS_STAGE_2 = 18
+SORT_THREADS_STAGE_2 = 4
+WRITING_THREADS_STAGE_2 = 2
 
 logger = get_logger(
     'client_handler',
@@ -129,7 +129,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ru
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
-    return
+    # return
 
     data_from_stage_1 = {}
     data_for_stage_2 = {}
@@ -215,4 +215,4 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ru
 if __name__ == '__main__':
     print(sys.argv)
     for i in range(1, 2):
-        run_sorting_experiment(i, '100', '1GB', '256', False, sys.argv[1:])
+        run_sorting_experiment(i, '1000', '100MB', '256', False, sys.argv[1:])
