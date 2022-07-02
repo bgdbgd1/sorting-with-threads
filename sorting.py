@@ -196,7 +196,7 @@ def create_local_storage_dirs(run_local):
     else:
         PREFIX = PREFIX_REMOTE
 
-    stages = [f'{PREFIX}stage_2']
+    stages = [f'{PREFIX}stage_1', f'{PREFIX}stage_2']
     for stage in stages:
         if not os.path.isdir(stage):
             os.mkdir(stage)
