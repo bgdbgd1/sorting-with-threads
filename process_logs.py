@@ -21,28 +21,16 @@ phrases_stage_1 = threads_test = {
     'read_initial_files_tasks': [
         'Started reading file',
         'Finished reading file',
-        # 'Started initializing minio client file name',
-        # 'Finished initializing minio client file name',
-        # 'read_file Start updating files_read',
-        # 'read_file Finish updating files_read'
     ],
     'determine_categories_tasks': [
         'Started sorting determine categories',
         'Finished sorting determine categories',
         'Started determine categories',
         'Finished determine categories',
-        # 'det_cat Start updating files_read determining_categories',
-        # 'det_cat Finish updating files_read determining_categories',
-        # 'det_cat Start updating files_read determined_categories',
-        # 'det_cat Finish updating files_read determined_categories'
     ],
     'write_first_file_tasks': [
         'Started writing file',
         'Finished writing file',
-        # 'write_file Start updating files_read writing',
-        # 'write_file Finish updating files_read writing',
-        # 'write_file Start updating files_read written',
-        # 'write_file Finish updating files_read written'
     ]
 }
 
@@ -90,11 +78,11 @@ formatted_data = {}
 
 def format_line(stage_name, phrase, line, task_name):
     exception_phrases = False
-    if phrase == 'Started reading partition ' or phrase == 'Finished reading partition ':
-        exception_phrases = True
-        results = re.search(f'(.*) {stage_name} INFO experiment_number:(.*); uuid:(.*); {phrase}(.*).', line)
-    else:
-        results = re.search(f'(.*) {stage_name} INFO experiment_number:(.*); uuid:(.*);', line)
+    # if phrase == 'Started reading partition ' or phrase == 'Finished reading partition ':
+    #     exception_phrases = True
+    #     results = re.search(f'(.*) {stage_name} INFO experiment_number:(.*); uuid:(.*); {phrase}(.*).', line)
+    # else:
+    results = re.search(f'(.*) {stage_name} INFO experiment_number:(.*); uuid:(.*);', line)
 
     # rs = results.groups()
     try:
@@ -183,13 +171,32 @@ def update_formatted_data(experiment_number, stage_name, phrase, process_uuid, t
         )
 
 
-def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads, nr_servers):
+def process_logs(
+        nr_files,
+        file_size,
+        intervals,
+        pipeline,
+        nr_parallel_threads,
+        nr_servers,
+        nr_reading_proc_stage_1=8,
+        nr_det_cat_proc_stage_1=8,
+        nr_writing_proc_stage_1=8,
+        nr_reading_proc_stage_2=8,
+        nr_det_cat_proc_stage_2=8,
+        nr_writing_proc_stage_2=8,
+):
     # log_files = glob.glob(f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}_eth4/*.log')
     # log_files = glob.glob(f'logs_determine_bandwidth/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_50_iterations_{nr_parallel_threads}_threads_with_rules_50MB/*.log')
     if pipeline == 'no_pipeline':
         log_files = glob.glob(f'logs_experiments/no-pipeline/{file_size}-{nr_files}files-NO-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/*.log')
     elif pipeline == 'with_pipeline':
-        log_files = glob.glob(f'logs_experiments/with-pipeline/{file_size}-{nr_files}files-WITH-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_with_pipeline/*.log')
+        log_files = glob.glob(
+            f'logs_experiments/'
+            f'with-pipeline/'
+            f'{file_size}-{nr_files}files-WITH-pipeline-10-experiments-{nr_servers}-servers-'
+            f'{nr_reading_proc_stage_1}-{nr_det_cat_proc_stage_1}-{nr_writing_proc_stage_1}-{nr_reading_proc_stage_2}-{nr_det_cat_proc_stage_2}-{nr_writing_proc_stage_2}/'
+            f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_with_pipeline/'
+            f'*.log')
 
     for experiment_log_file in log_files:
         try:
@@ -218,7 +225,11 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads, 
     if pipeline == 'no_pipeline':
         file_path = f'logs_experiments/no-pipeline/{file_size}-{nr_files}files-NO-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
     elif pipeline == 'with_pipeline':
-        file_path = f'logs_experiments/with-pipeline/{file_size}-{nr_files}files-with-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
+        file_path = f'logs_experiments/' \
+                    f'with-pipeline/' \
+                    f'{file_size}-{nr_files}files-with-pipeline-10-experiments-{nr_servers}-servers-' \
+                    f'{nr_reading_proc_stage_1}-{nr_det_cat_proc_stage_1}-{nr_writing_proc_stage_1}-{nr_reading_proc_stage_2}-{nr_det_cat_proc_stage_2}-{nr_writing_proc_stage_2}/' \
+                    f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
 
     with open(file_path, 'w+') as results_file:
         json.dump(formatted_data, results_file)
@@ -226,4 +237,18 @@ def process_logs(nr_files, file_size, intervals, pipeline, nr_parallel_threads, 
 
 if __name__ == '__main__':
     # process_logs('1000', '100MB', '256', pipeline='pipeline')
-    process_logs('100', '1GB', '512', pipeline='no_pipeline', nr_parallel_threads=24, nr_servers=11)
+    process_logs(
+        nr_files='100',
+        file_size='1GB',
+        intervals='256',
+        pipeline='with_pipeline',
+        nr_parallel_threads=24,
+        nr_servers=11,
+        nr_reading_proc_stage_1=8,
+        nr_det_cat_proc_stage_1=8,
+        nr_writing_proc_stage_1=8,
+        nr_reading_proc_stage_2=12,
+        nr_det_cat_proc_stage_2=6,
+        nr_writing_proc_stage_2=6,
+
+    )

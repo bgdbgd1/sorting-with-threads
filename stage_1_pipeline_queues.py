@@ -11,7 +11,7 @@ import numpy as np
 from minio import Minio
 
 from custom_logger import get_logger
-from constants import SERVER_NUMBER, FILE_NR, FILE_SIZE, CATEGORIES, PREFIX
+from constants import SERVER_NUMBER, FILE_NR, FILE_SIZE, CATEGORIES
 
 logger = get_logger(
     'stage_1',
@@ -235,6 +235,12 @@ def execute_stage_1_pipeline(
     queue_determine_categories = multiprocessing.Queue()
     queue_locations = multiprocessing.Queue()
     queue_write = multiprocessing.Queue()
+    initial_files_and_none = initial_files.copy()
+    for i in range(nr_reading_processes):
+        initial_files_and_none.append(None)
+
+    for file in initial_files_and_none:
+        queue_read.put(file)
 
     pool_read = mp.Pool(
         nr_reading_processes,
@@ -252,27 +258,26 @@ def execute_stage_1_pipeline(
         (queue_write, minio_ip, intermediate_bucket, experiment_number)
     )
 
-    for file in initial_files:
-        queue_read.put(file)
 
-    for i in range(nr_reading_processes):
-        queue_read.put(None)
 
-    queue_read.close()
-    queue_read.join_thread()
+    # queue_read.close()
+    # queue_read.join_thread()
 
-    queue_determine_categories.close()
-    queue_determine_categories.join_thread()
-
-    queue_write.close()
-    queue_write.join_thread()
+    # queue_determine_categories.close()
+    # queue_determine_categories.join_thread()
+    #
+    # queue_write.close()
+    # queue_write.join_thread()
 
     pool_read.close()
     pool_read.join()
 
     all_locations = {}
     for i in range(len(initial_files)):
-        all_locations.update(queue_locations.get())
+        try:
+            all_locations.update(queue_locations.get())
+        except Exception as exc:
+            print(exc)
     queue_locations.close()
     queue_locations.join_thread()
     utfcontent = json.dumps(all_locations).encode('utf-8')

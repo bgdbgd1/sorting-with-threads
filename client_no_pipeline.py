@@ -201,5 +201,5 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
 if __name__ == '__main__':
     print(sys.argv)
-    for i in range(1, 11):
-        run_sorting_experiment(i, '100', '1GB', '512', sys.argv[1:])
+    for i in range(1, 2):
+        run_sorting_experiment(i, '100', '1GB', '256', sys.argv[1:])

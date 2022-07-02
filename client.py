@@ -65,7 +65,7 @@ def call_stage_2_pipeline(ip, data, file_size, nr_files, intervals, experiment_n
     )
 
 
-def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ips):
+def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, run_local, ips):
     # Instantiate MinIO client
     minio_client = Minio(
         "127.0.0.1:9000",
@@ -79,8 +79,10 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
     files = [str(i) for i in range(int(nr_files))]
     files_per_ip = {}
-    prefix = 'http://10.149.0.'
-    # prefix = 'http://192.168.0.'
+    if run_local:
+        prefix = 'http://192.168.0.'
+    else:
+        prefix = 'http://10.149.0.'
     for i in range(len(ips)):
         ip = f'{prefix}{ips[i]}:5000/'
         files_per_ip.update(
@@ -212,5 +214,5 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ip
 
 if __name__ == '__main__':
     print(sys.argv)
-    for i in range(1, 11):
-        run_sorting_experiment(i, '100', '1GB', '256', sys.argv[1:])
+    for i in range(1, 5):
+        run_sorting_experiment(i, '100', '1GB', '256', False, sys.argv[1:])

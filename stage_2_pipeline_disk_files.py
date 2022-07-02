@@ -41,8 +41,8 @@ def read_partition(
             secret_key="minioadmin",
             secure=False
         )
-
-        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition.")
+        # logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Started reading partition {partition_name} from file {file_name}.")
 
         file_content = minio_client.get_object(
@@ -51,7 +51,8 @@ def read_partition(
             offset=start_index * 100,
             length=(end_index - start_index + 1) * 100
         ).data
-        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
+        logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition.")
+        # logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
         print(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finished reading partition {partition_name} from file {file_name}.")
         # if not os.path.isdir(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/read/{partition_name}'):
         #     os.mkdir(f'{PREFIX}stage_2/server_{SERVER_NUMBER}/read/{partition_name}')
@@ -259,17 +260,17 @@ def execute_stage_2_pipeline(
     for i in range(nr_reading_processes):
         queue_read.put(None)
 
-    queue_read.close()
-    queue_read.join_thread()
+    # queue_read.close()
+    # queue_read.join_thread()
 
     pool_read.close()
     pool_read.join()
 
-    pool_sort.close()
-    pool_sort.join()
-
-    pool_write.close()
-    pool_write.join()
+    # pool_sort.close()
+    # pool_sort.join()
+    #
+    # pool_write.close()
+    # pool_write.join()
 
     logger.info("========FINISH STAGE 2===========")
     minio_client = Minio(
