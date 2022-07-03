@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 import re
@@ -52,8 +53,61 @@ tasks_stage_2 = {
     ]
 }
 
+def format_data_and_create_timeline_without_read_partitions_tasks_per_stage(experiments_data, dst):
+    mapping_first_task_of_stage = {
+        'stage_1': {'task_type': 'read_initial_files_tasks', 'task_name': 'started_reading_file'},
+        'stage_2': {'task_type': 'sort_tasks', 'task_name': 'started_sorting_category'}
+    }
+    new_experiments_data = {}
+    timeline_experiments_data = {}
+    tasks_stage = copy.deepcopy(tasks_stage_2)
+    tasks_stage.pop('read_categories_tasks')
 
-def format_data_and_create_timeline_per_stage(experiments_data, stage_name, dst, pipeline):
+    for experiment_number, experiment_data in experiments_data.items():
+        new_experiments_data.update({experiment_number: {}})
+        for task_type, task_type_data in experiment_data['stage_2'].items():
+            if task_type == 'read_categories_tasks':
+                continue
+            new_experiments_data[experiment_number].update({task_type: []})
+            for task_id, task_data in task_type_data.items():
+                if len(task_data) == 1:
+                    continue
+                for task_name in tasks_stage[task_type]:
+                    try:
+                        task_data[task_name] = datetime.strptime(
+                            task_data[task_name], '%Y-%m-%d %H:%M:%S,%f'
+                        )
+                    except:
+                        break
+                task_data['execution_time'] = task_data[tasks_stage[task_type][-1]] - task_data[tasks_stage[task_type][0]]
+                task_data['execution_time'] = task_data['execution_time'].total_seconds()
+                new_experiments_data[experiment_number][task_type].append(task_data)
+
+        for task_type in tasks_stage.keys():
+            sorted_task_type_data = sorted(new_experiments_data[experiment_number][task_type], key=lambda k: k[tasks_stage[task_type][0]])
+            new_experiments_data[experiment_number][task_type] = sorted_task_type_data
+
+        first_task_type_of_stage = mapping_first_task_of_stage['stage_2']['task_type']
+        task_name_of_first_task = mapping_first_task_of_stage['stage_2']['task_name']
+        first_value = new_experiments_data[experiment_number][first_task_type_of_stage][0][task_name_of_first_task]
+        timeline_data = {experiment_number: {}}
+        for task_type in tasks_stage.keys():
+            timeline_data[experiment_number].update({task_type: []})
+
+        for task_type in tasks_stage.keys():
+            for task_type_data in new_experiments_data[experiment_number][task_type]:
+                difference_start_time_task = task_type_data[tasks_stage[task_type][0]] - first_value
+                difference_end_time_task = task_type_data[tasks_stage[task_type][-1]] - first_value
+                timeline_data[experiment_number][task_type].append(
+                    {
+                        'start_time': difference_start_time_task.total_seconds(),
+                        'end_time': difference_end_time_task.total_seconds()
+                    })
+        timeline_experiments_data.update(timeline_data)
+    generate_timeline(timeline_experiments_data, dst, 'stage_2')
+
+
+def format_data_and_create_timeline_per_stage(experiments_data, stage_name, dst):
     mapping_first_task_of_stage = {
         'stage_1': {'task_type': 'read_initial_files_tasks', 'task_name': 'started_reading_file'},
         'stage_2': {'task_type': 'read_categories_tasks', 'task_name': 'started_reading_partition'}
@@ -118,7 +172,7 @@ def format_data_and_create_timeline_per_stage(experiments_data, stage_name, dst,
         #         )
         #     sorted_new = sorted(new_writing_data, key=lambda k: k['start_time'])
         #     timeline_experiments_data[experiment_number]['write_first_file_tasks'].extend(sorted_new)
-    generate_timeline(timeline_experiments_data, dst, stage_name)
+    generate_timeline(timeline_experiments_data, dst, stage_name, without_read_partitions_task=False)
 
     # Order tasks based on their start time
     # for experiment_number, experiment_data in new_experiments_data.items():
@@ -130,7 +184,7 @@ def format_data_and_create_timeline_per_stage(experiments_data, stage_name, dst,
     # return new_experiments_data
 
 
-def generate_timeline(timeline_experiments_data, dir_name, stage_name):
+def generate_timeline(timeline_experiments_data, dir_name, stage_name, without_read_partitions_task=True):
     mapping_stage_tasks_color_label = {
         'stage_1': {
             'read_initial_files_tasks': {
@@ -167,6 +221,8 @@ def generate_timeline(timeline_experiments_data, dir_name, stage_name):
             }
         }
     }
+    if without_read_partitions_task:
+        mapping_stage_tasks_color_label['stage_2'].pop('read_categories_tasks')
 
     for experiment_number, experiment_data in timeline_experiments_data.items():
         task_type_nr = 0
@@ -201,9 +257,11 @@ def generate_timeline(timeline_experiments_data, dir_name, stage_name):
         # plt.xlabel('x label')  # Add an x-label to the axes.
         # plt.ylabel('y label')  # Add an y-label to the axes.
         # plt.legend()
-
-        plt.savefig(f'{dir_name}/timeline_{stage_name}_experiment_{experiment_number}.png')
-        plt.show()
+        if without_read_partitions_task:
+            plt.savefig(f'{dir_name}/timeline_{stage_name}_experiment_{experiment_number}_without_read_partitions.png')
+        else:
+            plt.savefig(f'{dir_name}/timeline_{stage_name}_experiment_{experiment_number}.png')
+        # plt.show()
     pass
 
 # def create_timeline_stage_1_for_1_experiment(stats, task_type, dst):
@@ -384,6 +442,8 @@ def create_plots(
         skip_stage_1=False,
         skip_stage_2=False,
         skip_client_handler=True,
+        create_timeline_stage_1=False,
+        create_timeline_stage_2=False,
         nr_reading_proc_stage_1=8,
         nr_det_cat_proc_stage_1=8,
         nr_writing_proc_stage_1=8,
@@ -391,7 +451,6 @@ def create_plots(
         nr_det_cat_proc_stage_2=8,
         nr_writing_proc_stage_2=8,
 ):
-    only_timeline = True
     if not pipeline:
         dir_name = f'logs_experiments/' \
                    f'no-pipeline/' \
@@ -452,110 +511,91 @@ def create_plots(
     # READ INITIAL FILES
     if not skip_stage_1:
         # Create timeline of all processes of stage 1
-        if only_timeline:
-            format_data_and_create_timeline_per_stage(experiments_data, 'stage_1', dir_name, pipeline)
-        else:
-            parsed_results_read_initial_files_tasks = parse_results(
-                experiments_data,
-                'stage_1',
-                'read_initial_files_tasks',
-                'started_reading_file',
-                'finished_reading_file',
-            )
-            # read_initial_file_tasks_timestamps_per_experiment = parsed_results_read_initial_files_tasks['tasks_timestamps_per_experiment']
-            read_initial_file_tasks_timestamps_total = parsed_results_read_initial_files_tasks['tasks_timestamps_total']
-            generate_ecdf(
-                read_initial_file_tasks_timestamps_total,
-                dir_name,
-                'ecdf_read_initial_file_all_experiments.png',
-                xlabel='Read initial files duration (s)',
-                ylabel='CDF'
-            )
-            if pipeline:
-                parsed_results_init_minio_client_tasks = parse_results(
-                    experiments_data,
-                    'stage_1',
-                    'read_initial_files_tasks',
-                    'started_initializing_minio_client_file_name',
-                    'finished_initializing_minio_client_file_name',
-                )
-                # read_initial_file_tasks_timestamps_per_experiment = parsed_results_read_initial_files_tasks['tasks_timestamps_per_experiment']
-                init_minio_client_tasks_timestamps_total = parsed_results_init_minio_client_tasks['tasks_timestamps_total']
-                generate_ecdf(
-                    init_minio_client_tasks_timestamps_total,
-                    dir_name,
-                    'ecdf_read_initial_file_initialize_minio_all_experiments.png',
-                    xlabel='Read initial files duration (s)',
-                    ylabel='CDF'
-                )
+        if create_timeline_stage_1:
+            format_data_and_create_timeline_per_stage(experiments_data, 'stage_1', dir_name)
 
-                parsed_results_update_files_read_tasks = parse_results(
-                    experiments_data,
-                    'stage_1',
-                    'read_initial_files_tasks',
-                    'read_file_start_updating_files_read',
-                    'read_file_finish_updating_files_read',
-                )
-                # read_initial_file_tasks_timestamps_per_experiment = parsed_results_read_initial_files_tasks['tasks_timestamps_per_experiment']
-                update_files_read_tasks_timestamps_total = parsed_results_update_files_read_tasks['tasks_timestamps_total']
-                generate_ecdf(
-                    update_files_read_tasks_timestamps_total,
-                    dir_name,
-                    'ecdf_update_files_read_all_experiments.png',
-                    xlabel='Read initial files duration (s)',
-                    ylabel='CDF'
-                )
+        parsed_results_read_initial_files_tasks = parse_results(
+            experiments_data,
+            'stage_1',
+            'read_initial_files_tasks',
+            'started_reading_file',
+            'finished_reading_file',
+        )
+        # read_initial_file_tasks_timestamps_per_experiment = parsed_results_read_initial_files_tasks['tasks_timestamps_per_experiment']
+        read_initial_file_tasks_timestamps_total = parsed_results_read_initial_files_tasks['tasks_timestamps_total']
+        generate_ecdf(
+            read_initial_file_tasks_timestamps_total,
+            dir_name,
+            'ecdf_read_initial_file_all_experiments.png',
+            xlabel='Read initial files duration (s)',
+            ylabel='CDF'
+        )
 
-            # SORT DETERMINE CATEGORIES
-            parsed_results_sort_det_cat = parse_results(
-                experiments_data,
-                'stage_1',
-                'determine_categories_tasks',
-                'started_sorting_determine_categories',
-                'finished_sorting_determine_categories'
-            )
-            sort_det_cat_timestamps_total = parsed_results_sort_det_cat['tasks_timestamps_total']
-            generate_ecdf(
-                sort_det_cat_timestamps_total,
-                dir_name,
-                'ecdf_sort_det_cat_all_experiments.png',
-                xlabel='Sort initial data by the first two bytes (s)',
-                ylabel='CDF'
-            )
+        # SORT DETERMINE CATEGORIES
+        parsed_results_sort_det_cat = parse_results(
+            experiments_data,
+            'stage_1',
+            'determine_categories_tasks',
+            'started_sorting_determine_categories',
+            'finished_sorting_determine_categories'
+        )
+        sort_det_cat_timestamps_total = parsed_results_sort_det_cat['tasks_timestamps_total']
+        generate_ecdf(
+            sort_det_cat_timestamps_total,
+            dir_name,
+            'ecdf_sort_det_cat_all_experiments.png',
+            xlabel='Sort initial data by the first two bytes (s)',
+            ylabel='CDF'
+        )
 
-            # Determine Categories
-            parsed_results_sort_det_cat = parse_results(
-                experiments_data,
-                'stage_1',
-                'determine_categories_tasks',
-                'started_determine_categories',
-                'finished_determine_categories'
-            )
-            sort_det_cat_timestamps_total = parsed_results_sort_det_cat['tasks_timestamps_total']
-            generate_ecdf(
-                sort_det_cat_timestamps_total,
-                dir_name,
-                'ecdf_determine_categories_all_experiments.png',
-                xlabel='Determine categories duration (s)',
-                ylabel='CDF'
-            )
+        # Determine Categories
+        parsed_results_sort_det_cat = parse_results(
+            experiments_data,
+            'stage_1',
+            'determine_categories_tasks',
+            'started_determine_categories',
+            'finished_determine_categories'
+        )
+        sort_det_cat_timestamps_total = parsed_results_sort_det_cat['tasks_timestamps_total']
+        generate_ecdf(
+            sort_det_cat_timestamps_total,
+            dir_name,
+            'ecdf_determine_categories_all_experiments.png',
+            xlabel='Determine categories duration (s)',
+            ylabel='CDF'
+        )
 
-            # Write initial files
-            parsed_results_write_first_file_tasks = parse_results(
-                experiments_data,
-                'stage_1',
-                'write_first_file_tasks',
-                'started_writing_file',
-                'finished_writing_file'
-            )
-            write_first_file_tasks_timestamps_total = parsed_results_write_first_file_tasks['tasks_timestamps_total']
-            generate_ecdf(
-                write_first_file_tasks_timestamps_total,
-                dir_name,
-                'ecdf_write_first_file_all_experiments.png',
-                xlabel='Write files to storage duration (s)',
-                ylabel='CDF'
-            )
+        parsed_results_sort_det_category_task = parse_results(
+            experiments_data,
+            'stage_1',
+            'determine_categories_tasks',
+            'started_sorting_determine_categories',
+            'finished_determine_categories'
+        )
+        sort_det_category_task_timestamps_total = parsed_results_sort_det_category_task['tasks_timestamps_total']
+        generate_ecdf(
+            sort_det_category_task_timestamps_total,
+            dir_name,
+            'ecdf_sort_and_determine_categories_tasks_all_experiments.png',
+            xlabel='Sort and determine categories duration (s)',
+            ylabel='CDF'
+        )
+        # Write initial files
+        parsed_results_write_first_file_tasks = parse_results(
+            experiments_data,
+            'stage_1',
+            'write_first_file_tasks',
+            'started_writing_file',
+            'finished_writing_file'
+        )
+        write_first_file_tasks_timestamps_total = parsed_results_write_first_file_tasks['tasks_timestamps_total']
+        generate_ecdf(
+            write_first_file_tasks_timestamps_total,
+            dir_name,
+            'ecdf_write_first_file_all_experiments.png',
+            xlabel='Write files to storage duration (s)',
+            ylabel='CDF'
+        )
     # return
     if skip_stage_2:
         return
@@ -570,9 +610,14 @@ def create_plots(
     #     task_name='read_categories_tasks',
     #     nr_files=int(nr_files),
     # )
-    if only_timeline:
-        format_data_and_create_timeline_per_stage(experiments_data, 'stage_2', dir_name, pipeline)
-        return
+    if create_timeline_stage_2:
+        use_read_partitions_task = False
+        exp_data_copy = copy.deepcopy(experiments_data)
+        if use_read_partitions_task:
+            format_data_and_create_timeline_per_stage(exp_data_copy, 'stage_2', dir_name)
+        else:
+            format_data_and_create_timeline_without_read_partitions_tasks_per_stage(exp_data_copy, dir_name)
+
     parsed_read_partitions_tasks = parse_results(
             experiments_data,
             'stage_2',
@@ -646,24 +691,6 @@ def create_plots(
         xlabel='Sort categories duration (s)',
         ylabel='CDF'
     )
-    if pipeline:
-    # Reading buffers
-
-        parsed_reading_buffers_categories_tasks = parse_results(
-            experiments_data,
-            'stage_2',
-            'sort_tasks',
-            'started_reading_buffers_category',
-            'finished_reading_buffers_category'
-        )
-        reading_buffers_tasks_timestamps_total = parsed_reading_buffers_categories_tasks['tasks_timestamps_total']
-        generate_ecdf(
-            reading_buffers_tasks_timestamps_total,
-            dir_name,
-            'ecdf_reading_buffers_categories_stage_2_all_experiments.png',
-            xlabel='Read buffers duration (s)',
-            ylabel='CDF'
-        )
 
     # WRITE CATEGORIES
 
@@ -692,9 +719,11 @@ if __name__ == '__main__':
         pipeline=True,
         nr_experiments=10,
         nr_servers=11,
-        skip_client_handler=True,
-        skip_stage_1=True,
+        skip_client_handler=False,
+        skip_stage_1=False,
         skip_stage_2=False,
+        create_timeline_stage_1=False,
+        create_timeline_stage_2=True,
         nr_reading_proc_stage_1=8,
         nr_det_cat_proc_stage_1=8,
         nr_writing_proc_stage_1=8,

@@ -9,8 +9,8 @@ from stage_1_no_pipeline import execute_stage_1_no_pipeline
 from stage_2_no_pipeline import execute_stage_2_no_pipeline
 # from stage_1_pipeline_shared_manager import execute_stage_1_pipeline
 # from stage_2_pipeline import execute_stage_2_pipeline
-# from stage_1_pipeline_disk_files import execute_stage_1_pipeline
-from stage_1_pipeline_queues import execute_stage_1_pipeline
+from stage_1_pipeline_disk_files import execute_stage_1_pipeline
+# from stage_1_pipeline_queues import execute_stage_1_pipeline
 from stage_2_pipeline_disk_files import execute_stage_2_pipeline
 
 from constants import SERVER_NUMBER, PREFIX_REMOTE, PREFIX_LOCAL
