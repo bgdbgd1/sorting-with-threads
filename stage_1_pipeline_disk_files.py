@@ -157,9 +157,6 @@ def write_file(
         file_written.write('ok')
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finished writing file {file_name}.')
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; write_file Start updating files_read written {file_name}.")
-
-    logger.info(f"experiment_number:{experiment_number}; uuid:{process_uuid}; Finish Start updating files_read written {file_name}.")
 
 
 def execute_stage_1_pipeline(
