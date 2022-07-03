@@ -40,8 +40,8 @@ phrases_stage_2 = {
         'Finished reading category',
         # 'Started reading partition file ',
         # 'Finished reading partition file ',
-        'Started reading partition ',
-        'Finished reading partition ',
+        'Started reading partition',
+        'Finished reading partition',
         # 'Start updating files_in_read',
         # 'Finish updating files_in_read',
         # 'Started initializing minio client partition',
@@ -190,10 +190,17 @@ def process_logs(
     if pipeline == 'no_pipeline':
         log_files = glob.glob(f'logs_experiments/no-pipeline/{file_size}-{nr_files}files-NO-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/*.log')
     elif pipeline == 'with_pipeline':
+        # log_files = glob.glob(
+        #     f'logs_experiments/'
+        #     f'with-pipeline/'
+        #     f'{file_size}-{nr_files}files-WITH-pipeline-10-experiments-{nr_servers}-servers-'
+        #     f'{nr_reading_proc_stage_1}-{nr_det_cat_proc_stage_1}-{nr_writing_proc_stage_1}-{nr_reading_proc_stage_2}-{nr_det_cat_proc_stage_2}-{nr_writing_proc_stage_2}/'
+        #     f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_with_pipeline/'
+        #     f'*.log')
         log_files = glob.glob(
             f'logs_experiments/'
             f'with-pipeline/'
-            f'{file_size}-{nr_files}files-WITH-pipeline-10-experiments-{nr_servers}-servers-'
+            f'test_nr_servers/'
             f'{nr_reading_proc_stage_1}-{nr_det_cat_proc_stage_1}-{nr_writing_proc_stage_1}-{nr_reading_proc_stage_2}-{nr_det_cat_proc_stage_2}-{nr_writing_proc_stage_2}/'
             f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_with_pipeline/'
             f'*.log')
@@ -225,9 +232,14 @@ def process_logs(
     if pipeline == 'no_pipeline':
         file_path = f'logs_experiments/no-pipeline/{file_size}-{nr_files}files-NO-pipeline-10-experiments-{nr_servers}-servers/logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
     elif pipeline == 'with_pipeline':
+        # file_path = f'logs_experiments/' \
+        #             f'with-pipeline/' \
+        #             f'{file_size}-{nr_files}files-with-pipeline-10-experiments-{nr_servers}-servers-' \
+        #             f'{nr_reading_proc_stage_1}-{nr_det_cat_proc_stage_1}-{nr_writing_proc_stage_1}-{nr_reading_proc_stage_2}-{nr_det_cat_proc_stage_2}-{nr_writing_proc_stage_2}/' \
+        #             f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
         file_path = f'logs_experiments/' \
                     f'with-pipeline/' \
-                    f'{file_size}-{nr_files}files-with-pipeline-10-experiments-{nr_servers}-servers-' \
+                    f'test_nr_servers/' \
                     f'{nr_reading_proc_stage_1}-{nr_det_cat_proc_stage_1}-{nr_writing_proc_stage_1}-{nr_reading_proc_stage_2}-{nr_det_cat_proc_stage_2}-{nr_writing_proc_stage_2}/' \
                     f'logs_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}/results_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_{pipeline}.json'
 
@@ -238,8 +250,8 @@ def process_logs(
 if __name__ == '__main__':
     # process_logs('1000', '100MB', '256', pipeline='pipeline')
     process_logs(
-        nr_files='100',
-        file_size='1GB',
+        nr_files='1000',
+        file_size='100MB',
         intervals='256',
         pipeline='with_pipeline',
         nr_parallel_threads=24,
@@ -247,8 +259,8 @@ if __name__ == '__main__':
         nr_reading_proc_stage_1=8,
         nr_det_cat_proc_stage_1=8,
         nr_writing_proc_stage_1=8,
-        nr_reading_proc_stage_2=12,
-        nr_det_cat_proc_stage_2=6,
-        nr_writing_proc_stage_2=6,
+        nr_reading_proc_stage_2=18,
+        nr_det_cat_proc_stage_2=4,
+        nr_writing_proc_stage_2=2,
 
     )

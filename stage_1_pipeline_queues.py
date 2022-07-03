@@ -1,10 +1,6 @@
-import glob
 import io
 import json
-import multiprocessing
 import multiprocessing as mp
-import os
-
 import uuid
 
 import numpy as np
@@ -159,7 +155,7 @@ def read_worker(
     while True:
         item = queue_read.get(block=True)
         if item is None:
-            queue_determine_categories.put(None)
+            # queue_determine_categories.put(None)
             break
         file_content_data = read_file(
             item,
@@ -179,7 +175,7 @@ def determine_categories_worker(
     while True:
         item = queue_determine_categories.get(block=True)
         if item is None:
-            queue_write.put(None)
+            # queue_write.put(None)
             break
         det_cat_result = determine_categories(
             item['file_name'],
@@ -231,15 +227,15 @@ def execute_stage_1_pipeline(
 ):
     process_uuid = uuid.uuid4()
 
-    queue_read = multiprocessing.Queue()
-    queue_determine_categories = multiprocessing.Queue()
-    queue_locations = multiprocessing.Queue()
-    queue_write = multiprocessing.Queue()
-    initial_files_and_none = initial_files.copy()
-    for i in range(nr_reading_processes):
-        initial_files_and_none.append(None)
+    queue_read = mp.Queue()
+    queue_determine_categories = mp.Queue()
+    queue_locations = mp.Queue()
+    queue_write = mp.Queue()
+    # initial_files_and_none = initial_files.copy()
+    # for i in range(nr_reading_processes):
+    #     initial_files_and_none.append(None)
 
-    for file in initial_files_and_none:
+    for file in initial_files:
         queue_read.put(file)
 
     pool_read = mp.Pool(
@@ -258,20 +254,46 @@ def execute_stage_1_pipeline(
         (queue_write, minio_ip, intermediate_bucket, experiment_number)
     )
 
+    reading_finished = False
+    det_cat_finished = False
+    writing_finished = False
 
+    while True:
+        if not reading_finished:
+            if queue_read.empty():
+                for i in range(nr_reading_processes):
+                    queue_read.put(None)
 
-    # queue_read.close()
-    # queue_read.join_thread()
+                queue_read.close()
+                queue_read.join_thread()
+                reading_finished = True
+        else:
+            if not det_cat_finished:
+                if queue_determine_categories.empty():
+                    for i in range(nr_det_cat_processes):
+                        queue_determine_categories.put(None)
 
-    # queue_determine_categories.close()
-    # queue_determine_categories.join_thread()
-    #
-    # queue_write.close()
-    # queue_write.join_thread()
+                    queue_determine_categories.close()
+                    queue_determine_categories.join_thread()
+                    det_cat_finished = True
+            else:
+                if not writing_finished:
+                    if queue_write.empty() and queue_locations.qsize() == len(initial_files):
+                        for i in range(nr_write_processes):
+                            queue_write.put(None)
+
+                        queue_write.close()
+                        queue_write.join_thread()
+                        writing_finished = True
+                else:
+                    break
 
     pool_read.close()
     pool_read.join()
-
+    pool_determine_categories.close()
+    pool_determine_categories.join()
+    pool_write.close()
+    pool_write.join()
     all_locations = {}
     for i in range(len(initial_files)):
         try:
