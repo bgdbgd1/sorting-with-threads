@@ -14,9 +14,9 @@ READING_THREADS_STAGE_1 = 8
 DET_CAT_THREADS_STAGE_1 = 8
 WRITING_THREADS_STAGE_1 = 8
 
-READING_THREADS_STAGE_2 = 14
-SORT_THREADS_STAGE_2 = 6
-WRITING_THREADS_STAGE_2 = 4
+READING_THREADS_STAGE_2 = 10
+SORT_THREADS_STAGE_2 = 8
+WRITING_THREADS_STAGE_2 = 6
 
 logger = get_logger(
     'client_handler',
@@ -76,42 +76,42 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ru
     process_uuid = uuid.uuid4()
     results_bucket = 'status'
     prefix_results_stage_1 = f'results_stage1_experiment_{experiment_number}_nr_files_{nr_files}_file_size_{file_size}_intervals_{intervals}_'
-
-    files = [str(i) for i in range(int(nr_files))]
-    files_per_ip = {}
     if run_local:
         prefix = 'http://192.168.0.'
     else:
         prefix = 'http://10.149.0.'
-    for i in range(len(ips)):
-        ip = f'{prefix}{ips[i]}:5000/'
-        files_per_ip.update(
-            {
-                ip: files[i * (len(files) // len(ips)): (i+1) * (len(files) // len(ips))]
-            }
-        )
-        if i == len(ips) - 1 and len(files) % len(ips) != 0:
-            files_per_ip[ip] += files[(i+1) * (len(files) // len(ips)):]
+    # files = [str(i) for i in range(int(nr_files))]
+    # files_per_ip = {}
 
-    logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
-    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
-
-    # # Send data to servers
-    pool_requests = Pool(24)
-    for ip, data in files_per_ip.items():
-        pool_requests.apply_async(
-            call_stage_1_pipeline,
-            args=(
-                ip,
-                data,
-                file_size,
-                nr_files,
-                intervals,
-                experiment_number
-            )
-        )
-    pool_requests.close()
-    pool_requests.join()
+    # for i in range(len(ips)):
+    #     ip = f'{prefix}{ips[i]}:5000/'
+    #     files_per_ip.update(
+    #         {
+    #             ip: files[i * (len(files) // len(ips)): (i+1) * (len(files) // len(ips))]
+    #         }
+    #     )
+    #     if i == len(ips) - 1 and len(files) % len(ips) != 0:
+    #         files_per_ip[ip] += files[(i+1) * (len(files) // len(ips)):]
+    #
+    # logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
+    # print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Start stage 1.')
+    #
+    # # # Send data to servers
+    # pool_requests = Pool(24)
+    # for ip, data in files_per_ip.items():
+    #     pool_requests.apply_async(
+    #         call_stage_1_pipeline,
+    #         args=(
+    #             ip,
+    #             data,
+    #             file_size,
+    #             nr_files,
+    #             intervals,
+    #             experiment_number
+    #         )
+    #     )
+    # pool_requests.close()
+    # pool_requests.join()
     # Check if all servers finished STAGE 1
     file_found = False
     object_names = set()
@@ -127,8 +127,8 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ru
             print("Sleeping")
             sleep(3)
 
-    logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
-    print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
+    # logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
+    # print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
     # return
 
     data_from_stage_1 = {}
