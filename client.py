@@ -10,13 +10,13 @@ from minio import Minio
 from custom_logger import get_logger
 from constants import FILE_NR, FILE_SIZE, CATEGORIES
 
-READING_THREADS_STAGE_1 = 4
+READING_THREADS_STAGE_1 = 6
 DET_CAT_THREADS_STAGE_1 = 10
-WRITING_THREADS_STAGE_1 = 10
+WRITING_THREADS_STAGE_1 = 8
 
-READING_THREADS_STAGE_2 = 10
-SORT_THREADS_STAGE_2 = 8
-WRITING_THREADS_STAGE_2 = 6
+READING_THREADS_STAGE_2 = 14
+SORT_THREADS_STAGE_2 = 6
+WRITING_THREADS_STAGE_2 = 4
 
 logger = get_logger(
     'client_handler',
@@ -129,7 +129,7 @@ def run_sorting_experiment(experiment_number, nr_files, file_size, intervals, ru
 
     logger.info(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
     print(f'experiment_number:{experiment_number}; uuid:{process_uuid}; Finish stage 1.')
-    return
+    # return
 
     data_from_stage_1 = {}
     data_for_stage_2 = {}
